@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Cơ sở dữ liệu nguồn (Cassandra)
+  cassandra-source:
+    image: cassandra:4.1
+    container_name: cassandra_source
+    ports:
+      - "9042:9042" # Cổng Cassandra mặc định
+    environment:
+      - CASSANDRA_CLUSTER_NAME=SourceCluster
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+
+  # Cơ sở dữ liệu đích (ScyllaDB)
+  scylla-target:
+    image: scylladb/scylla:latest
+    container_name: scylla_target
+    # Giới hạn tài nguyên cục bộ để tránh treo hệ thống
+    command: --smp 1 --memory 2G --developer-mode 1
+    ports:
+      - "9043:9042" # Ánh xạ sang cổng host 9043 để tránh xung đột với Cassandra
+    volumes:
+      - scylla_data:/var/lib/scylla
+
+  # Môi trường Spark và Phân tích Dữ liệu (Jupyter Notebook)
+  pyspark-notebook:
+    image: jupyter/pyspark-notebook:latest
+    container_name: pyspark_workspace
+    ports:
+      - "8888:8888" # Giao diện Web Jupyter
+      - "4040:4040" # Giao diện Web Spark
+    volumes:
+      # Gắn kết thư mục notebooks của host vào thư mục làm việc của container
+      - ./notebooks:/home/jovyan/work
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - GRANT_SUDO=yes
+
+volumes:
+  cassandra_data:
+  scylla_data:
