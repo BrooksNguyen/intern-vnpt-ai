@@ -31,8 +31,8 @@ services:
       - "8888:8888" # Giao diện Web Jupyter
       - "4040:4040" # Giao diện Web Spark
     volumes:
-      # Gắn kết thư mục notebooks của host vào thư mục làm việc của container
-      - ./notebooks:/home/jovyan/work
+      # Gắn kết thư mục gốc của host vào thư mục làm việc của container
+      - ./:/home/jovyan/work
     environment:
       - JUPYTER_ENABLE_LAB=yes
       - GRANT_SUDO=yes
