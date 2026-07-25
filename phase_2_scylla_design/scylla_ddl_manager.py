@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 HOST = os.getenv("SCYLLA_HOST", "scylla-target")
 PORT = int(os.getenv("SCYLLA_PORT", 9042))
-DEFAULT_TTL = int(os.getenv("DEFAULT_TTL", 15552000)) # Mặc định 180 ngày
+DEFAULT_TTL = int(os.getenv("DEFAULT_TTL", 2592000)) # Mặc định 30 ngày để tương thích TWCS (30 windows < 50 limit)
 
 logging.info(f"Connecting to ScyllaDB {HOST}:{PORT}...")
 retries = 10
