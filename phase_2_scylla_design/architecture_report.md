@@ -52,5 +52,5 @@ LIMIT 50;
 ## 4. Chiến lược tự động dọn dẹp dữ liệu (TWCS, TTL và Tombstone)
 
 - **TWCS (Time Window Compaction Strategy):** ScyllaDB sẽ tự động gom các tệp tin lưu trữ vật lý (SSTables) theo các khoảng thời gian (Window) bằng nhau (ví dụ: 1 ngày). Khi dữ liệu của một ngày cũ bị xóa hoặc hết hạn, toàn bộ file SSTable của ngày đó sẽ được thu hồi đĩa một cách nhanh chóng mà không tốn tài nguyên CPU để compaction chéo.
-- **Default TTL:** Bảng được cấu hình `default_time_to_live = 15552000` (180 ngày). Các tin nhắn cũ hơn 6 tháng sẽ tự động biến mất để giải phóng tài nguyên.
+- **Default TTL:** Bảng được cấu hình `default_time_to_live = 2592000` (30 ngày). Các tin nhắn cũ hơn 30 ngày sẽ tự động biến mất để giải phóng tài nguyên. (Lưu ý: ScyllaDB giới hạn `twcs_max_window_count = 50`, nên với window 1 ngày thì TTL không nên vượt quá 50 ngày).
 - **Tombstone & gc_grace_seconds:** Khi một bản ghi bị xóa hoặc hết hạn TTL, ScyllaDB sẽ đánh dấu nó bằng một thẻ gọi là **Tombstone**. Bản ghi này chưa thực sự bị xóa khỏi ổ đĩa mà được giữ lại trong khoảng thời gian `gc_grace_seconds` (mặc định là 10 ngày) để đảm bảo đồng bộ hóa trạng thái xóa đến tất cả các Node sao lưu (Replicas) trước khi bị xóa vật lý hoàn toàn.
