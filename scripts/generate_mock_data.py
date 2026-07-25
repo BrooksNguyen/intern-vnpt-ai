@@ -10,6 +10,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 HOST = os.getenv("CASSANDRA_HOST", "cassandra-source")
 PORT = int(os.getenv("CASSANDRA_PORT", 9042))
+MSG_LIMIT = int(os.getenv("MSG_LIMIT", 20000)) # Cho phép test số lượng cực lớn
 
 logging.info(f"Connecting to Cassandra {HOST}:{PORT}...")
 retries = 10
@@ -43,6 +44,9 @@ session.execute("""
         message_id timeuuid,
         user_id text,
         content text,
+        msg_type text,
+        device text,
+        is_edited boolean,
         timestamp timestamp,
         PRIMARY KEY (room_id, message_id)
     ) WITH CLUSTERING ORDER BY (message_id DESC);
@@ -55,7 +59,9 @@ sample_messages = [
     "chạy thử thôi", "hahaha", "cáp treo lại đứt à"
 ]
 
-users = [f"user_{i}" for i in range(1, 21)]
+msg_types = ["text", "image", "file", "link"]
+devices = ["ios", "android", "web", "desktop"]
+users = [f"user_{i}" for i in range(1, 100)] # Đa dạng user hơn
 now = datetime.now()
 
 def get_random_ts():
@@ -64,39 +70,47 @@ def get_random_ts():
     minutes = random.randint(0, 59)
     return now - timedelta(days=days, hours=hours, minutes=minutes)
 
-logging.info("Generating mock data...")
+logging.info(f"Generating mock data (Target total approx: {MSG_LIMIT})...")
 
 insert_query = session.prepare("""
-    INSERT INTO chat_table (room_id, message_id, user_id, content, timestamp)
-    VALUES (?, now(), ?, ?, ?)
+    INSERT INTO chat_table (room_id, message_id, user_id, content, msg_type, device, is_edited, timestamp)
+    VALUES (?, now(), ?, ?, ?, ?, ?, ?)
 """)
 
-for i in range(1, 11):
+# Sinh data cho 20 phòng chat bình thường
+for i in range(1, 21):
     room = f"room_{i}"
-    msgs_count = random.randint(20, 50)
+    msgs_count = random.randint(50, 150)
     for _ in range(msgs_count):
         session.execute(insert_query, [
             room,
             random.choice(users),
             random.choice(sample_messages),
+            random.choice(msg_types),
+            random.choice(devices),
+            random.random() < 0.05, # 5% tỉ lệ sửa tin nhắn
             get_random_ts()
         ])
 
+# Sinh lượng lớn data cho Hot Room
 hot_room = "room_999"
-hot_msgs = 2000
+hot_msgs = int(MSG_LIMIT * 0.8) # 80% lượng dữ liệu dồn vào hot partition
 logging.info(f"Injecting {hot_msgs} messages into hot room {hot_room}...")
 for i in range(hot_msgs):
     session.execute(insert_query, [
         hot_room,
         random.choice(users),
         random.choice(sample_messages),
+        random.choice(msg_types),
+        random.choice(devices),
+        random.random() < 0.05,
         get_random_ts()
     ])
-    if (i + 1) % 500 == 0:
+    if (i + 1) % 4000 == 0:
         logging.info(f"Pushed {i+1}/{hot_msgs} msgs...")
 
 logging.info("Mock data generated successfully.")
 row = session.execute("SELECT COUNT(*) FROM chat_table;").one()
-logging.info(f"Total rows: {row[0]}")
+logging.info(f"Total rows in Cassandra: {row[0]}")
 
 cluster.shutdown()
