@@ -35,6 +35,7 @@ session.execute("""
 """)
 session.set_keyspace("chat_system_target")
 
+# Cập nhật schema đầy đủ khớp với file schema.cql
 session.execute("""
     CREATE TABLE IF NOT EXISTS chat_table_bucketed (
         room_id text,
@@ -42,9 +43,17 @@ session.execute("""
         message_id timeuuid,
         user_id text,
         content text,
+        msg_type text,
+        device text,
+        is_edited boolean,
         timestamp timestamp,
         PRIMARY KEY ((room_id, bucket_id), message_id)
-    ) WITH CLUSTERING ORDER BY (message_id DESC);
+    ) WITH CLUSTERING ORDER BY (message_id DESC)
+    AND compaction = {
+        'class': 'TimeWindowCompactionStrategy',
+        'compaction_window_unit': 'DAYS',
+        'compaction_window_size': 1
+    };
 """)
 logging.info("Created target schema in ScyllaDB.")
 

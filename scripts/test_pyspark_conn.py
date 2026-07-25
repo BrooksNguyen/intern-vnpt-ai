@@ -29,7 +29,7 @@ try:
     total = df.count()
     logging.info(f"Connection test passed. Records in Cassandra: {total}")
     
-    df.select("room_id", "user_id", "content", "timestamp").show(5, truncate=False)
+    df.select("room_id", "user_id", "content", "msg_type", "device", "is_edited", "timestamp").show(5, truncate=False)
     
     spark.stop()
     sys.exit(0)
