@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 HOST = os.getenv("SCYLLA_HOST", "scylla-target")
 PORT = int(os.getenv("SCYLLA_PORT", 9042))
-DEFAULT_TTL = int(os.getenv("DEFAULT_TTL", 2592000)) # Mặc định 30 ngày để tương thích TWCS (30 windows < 50 limit)
+DEFAULT_TTL = int(os.getenv("DEFAULT_TTL", 2592000))
 
 logging.info(f"Connecting to ScyllaDB {HOST}:{PORT}...")
 retries = 10
@@ -28,17 +28,14 @@ if not session:
     logging.error("ScyllaDB connection failed.")
     sys.exit(1)
 
-logging.info("Connected successfully!")
+logging.info("Connected!")
 
-# Khởi tạo Keyspace dùng cơ chế NetworkTopologyStrategy của ScyllaDB
 session.execute("""
     CREATE KEYSPACE IF NOT EXISTS chat_system_target
     WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
 """)
 session.set_keyspace("chat_system_target")
 
-# Định nghĩa bảng tối ưu hóa tránh Hot Partition bằng Time Bucketing
-# Tích hợp TWCS và TTL mặc định cho toàn bảng
 session.execute(f"""
     CREATE TABLE IF NOT EXISTS chat_table_bucketed (
         room_id text,
@@ -59,7 +56,7 @@ session.execute(f"""
         'compaction_window_size': 1
     }};
 """)
-logging.info(f"Target schema set up. Default TTL configuration: {DEFAULT_TTL} seconds.")
+logging.info(f"Schema ok. TTL={DEFAULT_TTL}s")
 
 cluster.shutdown()
 sys.exit(0)
