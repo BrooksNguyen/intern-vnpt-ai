@@ -30,13 +30,14 @@ try:
     total = raw_df.count()
     logging.info(f"Read {total} records from Cassandra.")
 
-    # Fix hot partition issue by adding bucket_id
+    # Phân mảnh tránh hot partition bằng cách tạo bucket_id
     clean_df = raw_df.withColumn(
         "bucket_id",
         coalesce(date_format(col("timestamp"), "yyyy-MM"), lit("unknown"))
     )
 
-    clean_df.select("room_id", "bucket_id", "message_id", "user_id").show(5)
+    # Hiển thị 5 dòng dữ liệu đầy đủ các cột để kiểm tra
+    clean_df.select("room_id", "bucket_id", "message_id", "user_id", "msg_type", "device", "is_edited").show(5)
 
     logging.info("Writing to ScyllaDB...")
     clean_df.write \
