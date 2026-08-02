@@ -1,20 +1,20 @@
 #!/bin/bash
 set -e
 
-echo "Install docker lẹ nè..."
+echo "Bắt đầu quá trình cài đặt Docker Desktop cho macOS (Apple Silicon)..."
 
 DMG_PATH="Docker.dmg"
 URL="https://desktop.docker.com/mac/main/arm64/Docker.dmg"
 
 if [ ! -f "$DMG_PATH" ]; then
-    echo "Downloading DMG (Apple Silicon)..."
+    echo "Đang tải xuống tệp cài đặt DMG từ Docker..."
     curl -L -k -o "$DMG_PATH" "$URL"
-    echo "Tải xong!"
+    echo "Tải xuống hoàn tất."
 else
-    echo "File DMG có sẵn rồi, skip down."
+    echo "Phát hiện tệp DMG đã tồn tại trong hệ thống. Bỏ qua bước tải xuống."
 fi
 
-echo "Mounting..."
+echo "Đang tiến hành mount tệp DMG..."
 mount_info=$(hdiutil attach "$DMG_PATH" -nobrowse)
 echo "$mount_info"
 mount_point=$(echo "$mount_info" | grep "/Volumes/Docker" | awk -F'\t' '{print $NF}' | xargs)
@@ -23,19 +23,19 @@ if [ -z "$mount_point" ]; then
     mount_point="/Volumes/Docker"
 fi
 
-echo "Mount tại: $mount_point"
+echo "Đã mount thành công tại phân vùng: $mount_point"
 
-echo "Copy vào app (chờ hơi lâu tí nha)..."
+echo "Đang sao chép ứng dụng Docker vào thư mục /Applications (Quá trình này có thể mất vài phút)..."
 cp -R "$mount_point/Docker.app" "/Applications/"
 
-echo "Unmount..."
+echo "Đang unmount phân vùng cài đặt..."
 hdiutil detach "$mount_point"
 
-echo "Cleaning up..."
+echo "Đang dọn dẹp các tệp tin tạm..."
 rm -f "$DMG_PATH"
 
-echo "Cài xong!"
-echo "Mở Docker app..."
+echo "Cài đặt Docker Desktop thành công."
+echo "Đang khởi động dịch vụ Docker..."
 open -a Docker
 
-echo "Done! Check menu bar nhé."
+echo "Tiến trình hoàn tất. Vui lòng kiểm tra trạng thái hoạt động của Docker trên thanh Menu Bar."
