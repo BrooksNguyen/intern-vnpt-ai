@@ -1,36 +1,20 @@
 import os
-import sys
 import random
 import time
-import logging
 from datetime import datetime, timedelta
 from cassandra.cluster import Cluster
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+HOST = os.getenv("CASSANDRA_HOST", "127.0.0.1") # mặc định chạy local
+PORT = 9042
+MSG_LIMIT = 20000
 
-HOST = os.getenv("CASSANDRA_HOST", "cassandra-source")
-PORT = int(os.getenv("CASSANDRA_PORT", 9042))
-MSG_LIMIT = int(os.getenv("MSG_LIMIT", 20000))
+print(f"Connecting to Cassandra {HOST}:{PORT}...")
 
-logging.info(f"Connecting to Cassandra {HOST}:{PORT}...")
-retries = 10
-cluster = None
-session = None
+# Cứ connect thẳng, rớt mạng thì văng lỗi đỏ ra terminal luôn
+cluster = Cluster([HOST], port=PORT)
+session = cluster.connect()
 
-for i in range(retries):
-    try:
-        cluster = Cluster([HOST], port=PORT)
-        session = cluster.connect()
-        break
-    except Exception as e:
-        logging.warning(f"Retry {i+1}/{retries} failed: {e}. Waiting 10s...")
-        time.sleep(10)
-
-if not session:
-    logging.error("Cassandra connection failed.")
-    sys.exit(1)
-
-logging.info("Connected!")
+print("Connected!")
 
 session.execute("""
     CREATE KEYSPACE IF NOT EXISTS chat_system
@@ -70,7 +54,7 @@ def get_random_ts():
     minutes = random.randint(0, 59)
     return now - timedelta(days=days, hours=hours, minutes=minutes)
 
-logging.info(f"Generating mock data (~{MSG_LIMIT} msgs)...")
+print(f"Generating mock data (~{MSG_LIMIT} msgs)... chờ xíu nha")
 
 insert_query = session.prepare("""
     INSERT INTO chat_table (room_id, message_id, user_id, content, msg_type, device, is_edited, timestamp)
@@ -93,7 +77,7 @@ for i in range(1, 21):
 
 hot_room = "room_999"
 hot_msgs = int(MSG_LIMIT * 0.8)
-logging.info(f"Injecting {hot_msgs} messages into {hot_room}...")
+print(f"Bơm {hot_msgs} tin nhắn rác vào {hot_room} để test quá tải...")
 for i in range(hot_msgs):
     session.execute(insert_query, [
         hot_room,
@@ -105,10 +89,10 @@ for i in range(hot_msgs):
         get_random_ts()
     ])
     if (i + 1) % 4000 == 0:
-        logging.info(f"Pushed {i+1}/{hot_msgs} msgs...")
+        print(f"Pushed {i+1}/{hot_msgs} msgs...")
 
-logging.info("Done.")
+print("Xong!")
 row = session.execute("SELECT COUNT(*) FROM chat_table;").one()
-logging.info(f"Total rows: {row[0]}")
+print(f"Total rows: {row[0]}")
 
-cluster.shutdown()
+# cluster.shutdown() # Kệ, tự exit
