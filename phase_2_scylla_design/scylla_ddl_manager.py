@@ -9,8 +9,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 HOST = os.getenv("SCYLLA_HOST", "scylla-target")
 PORT = int(os.getenv("SCYLLA_PORT", 9042))
 DEFAULT_TTL = int(os.getenv("DEFAULT_TTL", 2592000))
+SCYLLA_DC = os.getenv("SCYLLA_DC", "datacenter1")
 
-logging.info(f"Connecting to ScyllaDB {HOST}:{PORT}...")
+logging.info(f"Connecting to ScyllaDB {HOST}:{PORT} (DC: {SCYLLA_DC})...")
 retries = 10
 cluster = None
 session = None
@@ -30,9 +31,9 @@ if not session:
 
 logging.info("Connected!")
 
-session.execute("""
+session.execute(f"""
     CREATE KEYSPACE IF NOT EXISTS chat_system_target
-    WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
+    WITH replication = {{'class': 'NetworkTopologyStrategy', '{SCYLLA_DC}': 1}};
 """)
 session.set_keyspace("chat_system_target")
 

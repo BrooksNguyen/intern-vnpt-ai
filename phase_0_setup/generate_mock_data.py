@@ -79,11 +79,15 @@ try:
         VALUES (?, now(), ?, ?, ?, ?, ?, ?)
     """)
 
+    from cassandra.concurrent import execute_concurrent_with_args
+
+    # Generate data for normal rooms
+    normal_parameters = []
     for i in range(1, 21):
         room = f"room_{i}"
         msgs_count = random.randint(50, 150)
         for _ in range(msgs_count):
-            session.execute(insert_query, [
+            normal_parameters.append((
                 room,
                 random.choice(users),
                 random.choice(sample_messages),
@@ -91,13 +95,18 @@ try:
                 random.choice(devices),
                 random.random() < 0.05,
                 get_random_ts()
-            ])
+            ))
+
+    logging.info(f"Executing concurrent inserts for normal rooms ({len(normal_parameters)} records)...")
+    execute_concurrent_with_args(session, insert_query, normal_parameters, concurrency=100)
 
     hot_room = "room_999"
     hot_msgs = int(MSG_LIMIT * 0.8)
-    logging.info(f"Injecting heavy load ({hot_msgs} messages) into {hot_room} to simulate hot partition...")
+    logging.info(f"Preparing heavy load ({hot_msgs} messages) for {hot_room} to simulate hot partition...")
+    
+    hot_parameters = []
     for i in range(hot_msgs):
-        session.execute(insert_query, [
+        hot_parameters.append((
             hot_room,
             random.choice(users),
             random.choice(sample_messages),
@@ -105,9 +114,10 @@ try:
             random.choice(devices),
             random.random() < 0.05,
             get_random_ts()
-        ])
-        if (i + 1) % 4000 == 0:
-            logging.info(f"Progress: {i+1}/{hot_msgs} records pushed.")
+        ))
+
+    logging.info(f"Executing concurrent inserts for hot room ({len(hot_parameters)} records)...")
+    execute_concurrent_with_args(session, insert_query, hot_parameters, concurrency=100)
 
     logging.info("Mock data generation completed.")
     row = session.execute("SELECT COUNT(*) FROM chat_table;").one()

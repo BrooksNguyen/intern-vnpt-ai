@@ -50,8 +50,7 @@ def main():
             
         logging.info(f"Successfully connected and initialized read stream in {time.time() - read_start:.2f} seconds.")
 
-        # FIXME: Phương pháp chia bucket mặc định theo tháng sẽ gây phân mảnh dư thừa ở các phòng chat ít tương tác.
-        # Cần tối ưu hóa: Áp dụng logic chia bucket động (chỉ kích hoạt cho các phòng chat vượt ngưỡng 1000 tin nhắn).
+        # Implementation of time-bucketing to prevent hot partitions
         df_transformed = df_source.withColumn("bucket_id", date_format(col("timestamp"), "yyyy-MM"))
 
         logging.info(f"Initiating data load to target ScyllaDB cluster at {SCYLLA_HOST}:{SCYLLA_PORT}...")

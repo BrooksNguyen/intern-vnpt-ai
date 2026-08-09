@@ -25,6 +25,13 @@ fi
 
 echo "Đã mount thành công tại phân vùng: $mount_point"
 
+echo "Kiểm tra và tắt dịch vụ Docker nếu đang chạy để tránh lỗi File in use..."
+if pgrep -xq "Docker"; then
+    echo "Phát hiện Docker đang chạy. Tiến hành đóng ứng dụng..."
+    killall Docker || true
+    sleep 3
+fi
+
 echo "Đang sao chép ứng dụng Docker vào thư mục /Applications (Quá trình này có thể mất vài phút)..."
 cp -R "$mount_point/Docker.app" "/Applications/"
 
