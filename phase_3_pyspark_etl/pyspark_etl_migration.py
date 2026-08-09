@@ -13,6 +13,8 @@ from pyspark.sql.functions import col, date_format
 
 def main():
     parser = argparse.ArgumentParser(description="PySpark ETL Migration: Cassandra to ScyllaDB")
+    parser.add_argument("--mode", type=str, default="optimized", choices=["default", "optimized"],
+                        help="Execution mode: default or optimized")
     args = parser.parse_args()
 
     CASS_HOST = os.getenv("CASSANDRA_HOST", "cassandra-source")
@@ -20,12 +22,19 @@ def main():
     SCYLLA_HOST = os.getenv("SCYLLA_HOST", "scylla-target")
     SCYLLA_PORT = os.getenv("SCYLLA_PORT", "9042")
 
-    logging.info("Initiating PySpark ETL Migration process...")
+    logging.info(f"Initiating PySpark ETL Migration process (mode={args.mode})...")
     
     builder = SparkSession.builder \
-        .appName("PySpark_ETL_Migration") \
+        .appName(f"PySpark_ETL_Migration_{args.mode}") \
         .config("spark.cassandra.connection.host", CASS_HOST) \
         .config("spark.cassandra.connection.port", CASS_PORT)
+
+    if args.mode == "optimized":
+        logging.info("Applying advanced performance tuning (Batching & Concurrency)...")
+        builder = builder \
+            .config("spark.cassandra.output.batch.size.bytes", "65536") \
+            .config("spark.cassandra.output.concurrent.writes", "10") \
+            .config("spark.cassandra.connection.keepAliveMS", "10000")
 
     spark = builder.getOrCreate()
     
