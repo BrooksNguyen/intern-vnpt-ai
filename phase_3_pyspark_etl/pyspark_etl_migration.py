@@ -6,7 +6,8 @@ import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages com.datastax.spark:spark-cassandra-connector_2.12:3.4.1 pyspark-shell'
+# TODO: Đảm bảo môi trường thực tế sử dụng đúng Scala 2.12 và Spark 3.4.x để tránh xung đột thư viện.
+os.environ.setdefault('PYSPARK_SUBMIT_ARGS', '--packages com.datastax.spark:spark-cassandra-connector_2.12:3.4.1 pyspark-shell')
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, date_format
@@ -47,10 +48,10 @@ def main():
             .options(table="chat_table", keyspace="chat_system") \
             .load()
             
-        total_records = df_source.count()
-        logging.info(f"Successfully extracted {total_records} records in {time.time() - read_start:.2f} seconds.")
+        logging.info(f"Successfully connected and initialized read stream in {time.time() - read_start:.2f} seconds.")
 
-        # Implementation of time-bucketing to prevent hot partitions
+        # FIXME: Phương pháp chia bucket mặc định theo tháng sẽ gây phân mảnh dư thừa ở các phòng chat ít tương tác.
+        # Cần tối ưu hóa: Áp dụng logic chia bucket động (chỉ kích hoạt cho các phòng chat vượt ngưỡng 1000 tin nhắn).
         df_transformed = df_source.withColumn("bucket_id", date_format(col("timestamp"), "yyyy-MM"))
 
         logging.info(f"Initiating data load to target ScyllaDB cluster at {SCYLLA_HOST}:{SCYLLA_PORT}...")
@@ -66,7 +67,7 @@ def main():
             
         write_time = time.time() - write_start
         logging.info(f"Data migration completed. Total write time: {write_time:.2f} seconds.")
-        logging.info(f"Average throughput: {total_records / write_time:.2f} rows/second.")
+        # Khuyến nghị: Kiểm tra Spark UI hoặc dùng Accumulators để xem chính xác lượng bản ghi xử lý thay vì dùng .count()
 
     except Exception as e:
         logging.error(f"ETL Migration failed with error: {e}")
