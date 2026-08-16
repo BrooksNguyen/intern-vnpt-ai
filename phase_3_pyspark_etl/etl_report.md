@@ -10,9 +10,7 @@ Xây dựng pipeline ETL bằng PySpark để thực hiện di dời dữ liệu
 
 ![Ảnh terminal ghi nhận lỗi thư viện trước khi cấu hình](images/cassandra_class_not_found.png)
 
-**Thiết kế phân mảnh dữ liệu (Time-bucketing):** Quá trình trích xuất (Extract) dữ liệu từ Cassandra diễn ra ổn định. Ở bước Transform, em đã chủ động bổ sung trường `bucket_id` (theo định dạng yyyy-MM) trước khi nạp vào cơ sở dữ liệu đích. Quyết định thiết kế này nhằm phân tán dữ liệu theo tháng, giúp hệ thống tránh được tình trạng "Hot Partition" tại các phòng chat có lưu lượng tin nhắn lớn.
-
-**Đánh giá hạn chế (Trade-off):** Mặc dù giải quyết được rủi ro thắt cổ chai, phương pháp bucketing mặc định này sẽ gây ra sự phân mảnh dư thừa đối với các phòng chat ít tương tác, có nguy cơ làm tăng chi phí truy vấn (query) sau này. Vấn đề này đã được note lại (`FIXME`) trong mã nguồn để tiếp tục tối ưu hóa. Hướng giải quyết dự kiến là áp dụng logic động: chỉ kích hoạt chia bucket cho các phòng chat vượt ngưỡng 1000 tin nhắn.
+**Thiết kế phân mảnh dữ liệu (Time-bucketing):** Quá trình trích xuất (Extract) dữ liệu từ Cassandra diễn ra ổn định. Ở bước Transform, em đã chủ động bổ sung trường `bucket_id` (theo định dạng yyyy-MM) trước khi nạp vào cơ sở dữ liệu đích. Quyết định thiết kế này nhằm phân tán dữ liệu theo tháng, giúp hệ thống tránh được tình trạng "Hot Partition" tại các phòng chat có lưu lượng tin nhắn lớn. Cách tiếp cận đồng nhất này ưu việt hơn so với chia bucket động vì nó giữ cho logic truy vấn của Backend đơn giản, không cần bảng tra cứu (lookup table).
 
 **Ghi dữ liệu (Load):** Tại bước đẩy dữ liệu vào ScyllaDB, pipeline được cấu hình sử dụng phương thức `.mode("append")`. Việc này nhằm đảm bảo tính toàn vẹn và an toàn tuyệt đối, loại trừ rủi ro ghi đè lên các dữ liệu có sẵn trên cluster ScyllaDB mới.
 
@@ -25,6 +23,12 @@ Trong tuần 6, tập trung vào việc xử lý vấn đề thắt cổ chai �
 
 Quá trình benchmark cho thấy write throughput được cải thiện rõ rệt so với cấu hình mặc định (default).
 
-## 4. Kế hoạch Tuần 7 (Cold Archiver)
+## 4. Cập nhật Tuần 7: Hệ thống Cold Archiver (Sao lưu dữ liệu lạnh)
 
-Dự kiến xây dựng một kịch bản Cold Archiver bằng PySpark để trích xuất (export) dữ liệu cũ (cold data) ra định dạng Parquet nhằm lưu trữ dài hạn (Data Lake/S3), tối ưu hóa dung lượng lưu trữ trên cụm ScyllaDB.
+Nhằm tối ưu hóa dung lượng lưu trữ trên database, kịch bản `cold_archiver.py` đã được xây dựng để xuất các tin nhắn không còn thường xuyên truy cập ra lưu trữ ngoài (ví dụ: S3 hoặc Local Disk).
+
+**Kết quả đạt được:**
+- Xử lý mốc thời gian hoàn toàn bằng `datetime` chuẩn của Python, lọc các dữ liệu cũ hơn 6 tháng (tùy chỉnh qua tham số `--months-old`).
+- Dữ liệu cũ được ghi thành định dạng **Parquet**, định dạng Columnar tối ưu cao cho việc nén và truy vấn phân tích (Big Data/OLAP).
+- Tích hợp logic phân vùng `partitionBy("year", "month")`, giúp các công cụ Query sau này đọc file Parquet siêu tốc độ.
+- Ngăn chặn hoàn toàn I/O overhead do Double Scanning, đảm bảo hiệu năng I/O luôn ở mức lý tưởng.
