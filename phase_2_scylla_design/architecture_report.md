@@ -1,50 +1,42 @@
-# Phân tích thiết kế ScyllaDB
+# Báo Cáo Thiết Kế Kiến Trúc ScyllaDB
 
-Note lại mấy cái mình tìm hiểu được về ScyllaDB trong quá trình redesign schema cho hệ thống chat.
+Tài liệu tóm tắt các quyết định thiết kế khi chuyển đổi cơ sở dữ liệu từ Cassandra sang ScyllaDB.
 
----
+## 1. Token-Aware Routing
+ScyllaDB và Cassandra phân bổ dữ liệu dựa trên hàm băm (Murmur3) của partition key. Việc cấu hình `TokenAware` trên client driver giúp gửi truy vấn trực tiếp đến Node chứa dữ liệu, bỏ qua Coordinator Node, từ đó giảm độ trễ (latency).
 
-## Token-Aware Routing
+## 2. Vấn đề của Kiến trúc cũ
+- **Schema cũ:** `PRIMARY KEY (room_id, message_id)`. Toàn bộ dữ liệu của một phòng chat lưu trên một partition duy nhất.
+- **Vấn đề:** Các phòng chat lớn (như `room_999`) gây ra hiện tượng Hot Partition, làm quá tải một số Node cụ thể. Việc truy vấn theo các trường phụ (`msg_type`, `device`) yêu cầu `ALLOW FILTERING`, dẫn đến full scan và giảm hiệu năng.
 
-ScyllaDB/Cassandra hash partition key bằng Murmur3 rồi phân bổ data vào các node theo token range. Nếu driver client cấu hình `TokenAware` thì nó tự tính token và gửi request thẳng tới đúng node chứa data, bỏ qua coordinator node => giảm latency đáng kể.
+## 3. Giải pháp: Composite Partition Key & Time Bucketing
+Cấu trúc khóa chính được thiết kế lại, bổ sung trường `bucket_id` (định dạng `YYYY-MM`):
 
-## Vấn đề schema cũ
-
-Schema cũ dùng `PRIMARY KEY (room_id, message_id)` nên toàn bộ tin nhắn 1 room dồn vào 1 partition. Room nào chat nhiều (room_999 chẳng hạn) thì partition đó phình to => node bị quá tải = Hot Partition.
-
-Muốn query kiểu filter theo `msg_type` hay `device` mà ko có trong partition key thì phải `ALLOW FILTERING` => full scan, chậm kinh khủng.
-
-## Giải pháp: Composite Partition Key + Time Bucketing
-
-Thêm `bucket_id` (format `YYYY-MM`) vào partition key:
-
-```
+```sql
 PRIMARY KEY ((room_id, bucket_id), message_id)
 ```
 
-Room lớn sẽ tự động chia nhỏ theo tháng, mỗi tháng 1 partition riêng => phân tải đều.
+**Ưu điểm:** Dữ liệu của các phòng chat lớn tự động phân tách theo từng tháng vào các partition khác nhau, đảm bảo phân bổ tải trọng đồng đều trên toàn cụm (cluster).
 
-## Query mẫu cho Backend
+## 4. Các Mẫu Truy Vấn Hỗ trợ Backend
 
-**Lấy 50 tin mới nhất:**
+**Lấy 50 tin nhắn mới nhất:**
 ```sql
 SELECT * FROM chat_system_target.chat_table_bucketed
 WHERE room_id = 'room_1' AND bucket_id = '2026-07'
 LIMIT 50;
 ```
 
-**Phân trang (user vuốt lên xem tin cũ):**
+**Truy xuất phân trang lịch sử tin nhắn:**
 ```sql
 SELECT * FROM chat_system_target.chat_table_bucketed
 WHERE room_id = 'room_1' AND bucket_id = '2026-07'
   AND message_id < 6ff1b35a-8405-11f1-8e64-af4db1424c6c
 LIMIT 50;
 ```
+*(Khóa sắp xếp `message_id DESC` đảm bảo kết quả luôn trả về tin nhắn mới nhất trước).*
 
-Clustering key `message_id DESC` nên mặc định trả tin mới nhất trước, ko cần sort.
-
-## TWCS, TTL, Tombstone
-
-- **TWCS**: gom SSTable theo time window (1 ngày). Khi data cũ hết hạn thì drop cả file luôn, ko tốn CPU compaction chéo.
-- **TTL**: set `default_time_to_live = 2592000` (30 ngày). ScyllaDB giới hạn `twcs_max_window_count = 50` nên TTL / window_size phải < 50.
-- **Tombstone**: bản ghi bị xóa/hết TTL sẽ được đánh dấu tombstone, giữ lại `gc_grace_seconds` (default 10 ngày) để sync giữa các replica rồi mới xóa vật lý.
+## 5. Quản Lý Vòng Đời Dữ Liệu
+- **TimeWindowCompactionStrategy (TWCS):** Nhóm các SSTable theo khung thời gian (ví dụ: 1 ngày). Tối ưu hóa việc xóa dữ liệu cũ, giảm tải CPU so với nén chéo (cross-compaction).
+- **Time-To-Live (TTL):** Thiết lập `default_time_to_live = 2592000` (30 ngày) để tự động xóa dữ liệu hết hạn. Tỷ lệ TTL/window được duy trì < 50 theo giới hạn của ScyllaDB.
+- **Tombstone:** Các bản ghi hết hạn TTL sẽ được đánh dấu (tombstone) và giữ lại trong `gc_grace_seconds` (mặc định 10 ngày) để hoàn tất đồng bộ (sync) giữa các replica trước khi xóa vật lý.

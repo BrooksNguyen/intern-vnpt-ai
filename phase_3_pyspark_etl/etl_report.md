@@ -1,34 +1,49 @@
 # Báo Cáo Tiến Độ Phase 3
 
+## 0. Tổng quan Dữ liệu Nguồn (EDA)
+
+Kết quả phân tích từ tập dữ liệu giả lập (mock data) trên Cassandra:
+
+![Phân phối thiết bị](images/device_distribution.png)
+*(Nền tảng iOS chiếm 60%, Android 30%, phản ánh đúng đặc thù nền tảng di động).*
+
+![Phân phối thời gian](images/time_distribution.png)
+*(Lượng tin nhắn tập trung vào khung giờ trưa và 19h-21h, giảm dần về rạng sáng).*
+
 ## 1. Mục tiêu công việc
+Xây dựng pipeline ETL bằng PySpark để di dời dữ liệu (data migration) từ Cassandra sang cụm ScyllaDB mới.
 
-Xây dựng pipeline ETL bằng PySpark để thực hiện di dời dữ liệu (data migration) từ hệ thống lưu trữ Cassandra hiện tại sang cụm ScyllaDB mới.
+## 2. Quá trình triển khai (Tuần 5)
 
-## 2. Quá trình triển khai và giải quyết vấn đề (Tuần 5)
+**Cấu hình môi trường:** Lỗi thiếu thư viện `ClassNotFound` khi kết nối Cassandra được xử lý bằng cách khai báo biến môi trường `PYSPARK_SUBMIT_ARGS`, giúp Spark tự động tải gói dependency (`.jar`) khi khởi chạy.
 
-**Khởi tạo và cấu hình:** PySpark được lựa chọn làm công cụ xử lý chính nhờ khả năng đáp ứng tốt các bài toán Big Data. Trong giai đoạn đầu thiết lập, quá trình kết nối phát sinh lỗi `ClassNotFound` do thiếu thư viện giao tiếp trực tiếp với Cassandra. Vấn đề này đã được xử lý thành công bằng cách cấu hình biến môi trường `PYSPARK_SUBMIT_ARGS`, cho phép Spark tự động tải các gói dependency (`.jar`) cần thiết trong quá trình thực thi.
+![Lỗi thiếu thư viện](images/cassandra_class_not_found.png)
 
-![Ảnh terminal ghi nhận lỗi thư viện trước khi cấu hình](images/cassandra_class_not_found.png)
+**Xử lý Hot Partition bằng Time-bucketing:** Từ kết quả EDA, các phòng chat có lưu lượng lớn gây ra hiện tượng Hot Partition trên một số Node.
 
-**Thiết kế phân mảnh dữ liệu (Time-bucketing):** Quá trình trích xuất (Extract) dữ liệu từ Cassandra diễn ra ổn định. Ở bước Transform, em đã chủ động bổ sung trường `bucket_id` (theo định dạng yyyy-MM) trước khi nạp vào cơ sở dữ liệu đích. Quyết định thiết kế này nhằm phân tán dữ liệu theo tháng, giúp hệ thống tránh được tình trạng "Hot Partition" tại các phòng chat có lưu lượng tin nhắn lớn. Cách tiếp cận đồng nhất này ưu việt hơn so với chia bucket động vì nó giữ cho logic truy vấn của Backend đơn giản, không cần bảng tra cứu (lookup table).
+![Biểu đồ phân phối phòng chat](../phase_1_profiling/room_distribution.png)
 
-**Ghi dữ liệu (Load):** Tại bước đẩy dữ liệu vào ScyllaDB, pipeline được cấu hình sử dụng phương thức `.mode("append")`. Việc này nhằm đảm bảo tính toàn vẹn và an toàn tuyệt đối, loại trừ rủi ro ghi đè lên các dữ liệu có sẵn trên cluster ScyllaDB mới.
+Giải pháp: Bổ sung trường `bucket_id` (định dạng `yyyy-MM`) vào khóa chính ở bước Transform. Dữ liệu của các phòng chat được phân tán theo từng tháng, giúp phân bổ tải trọng đồng đều lên các Node. Việc áp dụng logic bucketing đồng nhất (thay vì động) giúp giữ cho truy vấn Backend đơn giản (không cần bảng tra cứu).
 
-## 3. Cập nhật Tuần 6: Tối ưu hiệu năng I/O
+**Ghi dữ liệu (Load):** Pipeline sử dụng phương thức `.mode("append")` để ghi dữ liệu, đảm bảo không ghi đè lên các bản ghi hiện có tại ScyllaDB.
 
-Trong tuần 6, tập trung vào việc xử lý vấn đề thắt cổ chai ở throughput khi ghi vào ScyllaDB. Em đã tích hợp thêm cờ `--mode optimized` để Spark tự động thiết lập các cấu hình nâng cao:
-- **`spark.cassandra.output.batch.size.bytes`**: Tăng lên `65536` bytes để gom nhiều thao tác ghi vào một batch, giảm tải network overhead.
-- **`spark.cassandra.output.concurrent.writes`**: Thiết lập `10` luồng ghi song song trên mỗi task, tăng cường khả năng tận dụng IOPS của ổ cứng.
-- **`spark.cassandra.connection.keepAliveMS`**: Giữ kết nối tới ScyllaDB lâu hơn (10 giây) để tái sử dụng connection pooling hiệu quả.
+## 3. Tối ưu hóa hiệu năng I/O (Tuần 6)
 
-Quá trình benchmark cho thấy write throughput được cải thiện rõ rệt so với cấu hình mặc định (default).
+Để cải thiện tốc độ ghi dữ liệu vào ScyllaDB, cờ `--mode optimized` được thiết lập nhằm kích hoạt các cấu hình nâng cao trong Spark:
+- **`spark.cassandra.output.batch.size.bytes`**: Đặt ở mức `65536` bytes để tối ưu hóa kích thước batch, giảm overhead mạng.
+- **`spark.cassandra.output.concurrent.writes`**: Sử dụng `10` luồng ghi đồng thời để tăng hiệu suất IOPS.
+- **`spark.cassandra.connection.keepAliveMS`**: Duy trì kết nối trong `10000` ms (10 giây) để tái sử dụng connection pool.
 
-## 4. Cập nhật Tuần 7: Hệ thống Cold Archiver (Sao lưu dữ liệu lạnh)
+Kết quả: Thông lượng ghi (write throughput) cải thiện đáng kể so với cấu hình mặc định.
 
-Nhằm tối ưu hóa dung lượng lưu trữ trên database, kịch bản `cold_archiver.py` đã được xây dựng để xuất các tin nhắn không còn thường xuyên truy cập ra lưu trữ ngoài (ví dụ: S3 hoặc Local Disk).
+## 4. Hệ thống Cold Archiver (Tuần 7)
 
-**Kết quả đạt được:**
-- Xử lý mốc thời gian hoàn toàn bằng `datetime` chuẩn của Python, lọc các dữ liệu cũ hơn 6 tháng (tùy chỉnh qua tham số `--months-old`).
-- Dữ liệu cũ được ghi thành định dạng **Parquet**, định dạng Columnar tối ưu cao cho việc nén và truy vấn phân tích (Big Data/OLAP).
-- Tích hợp logic phân vùng `partitionBy("year", "month")`, giúp các công cụ Query sau này đọc file Parquet siêu tốc độ.
-- Ngăn chặn hoàn toàn I/O overhead do Double Scanning, đảm bảo hiệu năng I/O luôn ở mức lý tưởng.
+Kịch bản `cold_archiver.py` được triển khai để di chuyển các dữ liệu cũ sang kho lưu trữ dài hạn (S3/Local Disk), giảm chi phí và tối ưu dung lượng cho database chính.
+
+**Chi tiết kỹ thuật:**
+- Sử dụng module `datetime` để lọc các bản ghi có thời gian tạo lớn hơn 6 tháng.
+- Dữ liệu được xuất ra định dạng **Parquet** tối ưu cho truy vấn phân tích (OLAP).
+- Cấu trúc thư mục được phân vùng bằng `partitionBy("year", "month")`, hỗ trợ các Query Engine truy xuất dữ liệu nhanh hơn.
+- Script chỉ thực hiện đọc dữ liệu một lần (1-Pass) và loại bỏ các lệnh `.count()` nhằm tránh quá tải bộ nhớ (OOM).
+
+Pipeline ETL hiện đã hoàn thiện và đáp ứng đầy đủ yêu cầu chuyển tiếp sang Phase 4 (Phân tích NLP).

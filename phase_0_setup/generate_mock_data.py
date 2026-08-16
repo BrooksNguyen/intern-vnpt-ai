@@ -55,10 +55,11 @@ try:
     """)
 
     sample_messages = [
-        "System initialization complete.", "Health check ping.", "Message received.", "Status code 200.", 
-        "Data synchronization in progress.", "Review requested for PR #1042.", "Deployment successful.", 
-        "Task completed.", "Running diagnostic tests.", "Connection verified.", "Error detected in module A.", 
-        "Executing batch operations.", "Logs flushed.", "Connection terminated."
+        "Dạ, em cảm ơn.", "Shop cho mình hỏi size giày này còn không?", "Lỗi mạng rồi bạn ơi", 
+        "Ok chốt nhé.", "Mạng VNPT dạo này lag quá, fix giúp mình.", "Gói cước này nạp tiền ntn vậy?",
+        "Ủa sao k gửi được ảnh nhỉ", "Tí nữa gọi lại nha", "Có ai hỗ trợ mình với =(((",
+        "Alo alo 123", "Cho e hỏi chi phí lắp đặt wifi bao nhiêu ạ?", "Tuyệt vời", "Sp dùng chán quá",
+        "Đã thanh toán xong.", "Check inbox đi bạn", "Mình đang bận xíu", "Để mình suy nghĩ thêm."
     ]
 
     msg_types = ["text", "image", "file", "link"]
@@ -68,9 +69,15 @@ try:
 
     def get_random_ts():
         days = random.randint(0, 150)
-        hours = random.randint(0, 23)
+        # Giả lập phân phối giờ thực tế: Tránh 2-4h sáng, tập trung vào ban ngày và tối.
+        hour_weights = [1, 1, 0, 0, 0, 1, 3, 5, 8, 8, 7, 6, 6, 5, 5, 6, 7, 8, 9, 10, 10, 8, 5, 2]
+        hours = random.choices(range(24), weights=hour_weights)[0]
         minutes = random.randint(0, 59)
         return now - timedelta(days=days, hours=hours, minutes=minutes)
+
+    def get_random_device():
+        # Phân phối thiết bị: 60% iOS, 30% Android, 5% Web, 5% Desktop
+        return random.choices(devices, weights=[0.6, 0.3, 0.05, 0.05])[0]
 
     logging.info(f"Generating synthetic mock data (Approx. {MSG_LIMIT} records)...")
 
@@ -92,7 +99,7 @@ try:
                 random.choice(users),
                 random.choice(sample_messages),
                 random.choice(msg_types),
-                random.choice(devices),
+                get_random_device(),
                 random.random() < 0.05,
                 get_random_ts()
             ))
@@ -111,7 +118,7 @@ try:
             random.choice(users),
             random.choice(sample_messages),
             random.choice(msg_types),
-            random.choice(devices),
+            get_random_device(),
             random.random() < 0.05,
             get_random_ts()
         ))
