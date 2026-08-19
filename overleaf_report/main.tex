@@ -344,6 +344,28 @@ Script \texttt{cold\_archiver.py} di chuyển dữ liệu cũ (> 6 tháng) sang 
 \end{itemize}
 
 % ============================================================
+% PHASE 4: PHÂN TÍCH NLP
+% ============================================================
+\newpage
+\section{Phase 4: Phân tích Cảm xúc và Xử lý Ngôn ngữ Tự nhiên (NLP)}
+\label{sec:phase4}
+
+\subsection{Mục tiêu}
+Làm sạch dữ liệu văn bản từ hệ thống chat (loại bỏ ký tự đặc biệt, URL, stopwords) và chuẩn bị dữ liệu thô phục vụ cho các bài toán phân tích ngôn ngữ tự nhiên (NLP) ở các giai đoạn sau.
+
+\subsection{Tiền xử lý văn bản (Text Preprocessing)}
+Quy trình làm sạch dữ liệu bao gồm 5 bước tiêu chuẩn:
+\begin{itemize}[noitemsep]
+    \item \textbf{Chuyển đổi chữ thường:} Đưa toàn bộ văn bản về lowercase.
+    \item \textbf{Loại bỏ URL:} Sử dụng Regex để lọc bỏ các liên kết web.
+    \item \textbf{Bảo tồn Emoticon:} Các biểu tượng cảm xúc mang nhiều ý nghĩa (vd: \texttt{=)))}, \texttt{<3}, \texttt{!!!}, \texttt{???}) được tách riêng để không bị xóa bởi bộ lọc dấu câu.
+    \item \textbf{Tách từ (Tokenize):} Sử dụng thư viện \texttt{underthesea} để xử lý segmentation tiếng Việt chính xác.
+    \item \textbf{Loại bỏ Stopwords:} Dùng danh sách stopwords tùy chỉnh tiếng Việt và tiếng Anh.
+\end{itemize}
+
+
+
+% ============================================================
 % TỔNG KẾT
 % ============================================================
 \newpage
@@ -363,6 +385,7 @@ Phase 0 & Thiết lập Docker Compose, sinh Mock Data & Hoàn thành \\
 Phase 1 & Phân tích EDA, phát hiện Hot Partition & Hoàn thành \\
 Phase 2 & Thiết kế schema ScyllaDB, Time-bucketing & Hoàn thành \\
 Phase 3 & Pipeline ETL, Tối ưu I/O, Cold Archiver & Hoàn thành \\
+Phase 4 & Tiền xử lý văn bản tiếng Việt (Text Preprocessing) & Hoàn thành \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -381,9 +404,10 @@ Apache Cassandra & 4.1 (Cơ sở dữ liệu nguồn) \\
 ScyllaDB & latest (Cơ sở dữ liệu đích) \\
 Apache Spark (PySpark) & 3.4.x (Xử lý ETL) \\
 Docker Compose & 3.8 (Đóng gói hạ tầng) \\
-Python & 3.x (Scripting, Mock Data) \\
+Python & 3.x (Scripting, ETL, NLP) \\
 cassandra-driver & Kết nối Python $\leftrightarrow$ Cassandra/ScyllaDB \\
 Matplotlib & Trực quan hóa dữ liệu \\
+underthesea & Tiền xử lý ngôn ngữ tiếng Việt (Tokenize) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -391,9 +415,10 @@ Matplotlib & Trực quan hóa dữ liệu \\
 \subsection{Hướng phát triển tiếp theo}
 
 \begin{enumerate}[noitemsep]
-    \item \textbf{Phase 4 -- Phân tích NLP:} Tiền xử lý văn bản tiếng Việt, phân tích cảm xúc (Sentiment Analysis) trên tập dữ liệu tin nhắn chat.
-    \item \textbf{Trực quan hóa:} Xây dựng Dashboard tổng hợp các chỉ số hệ thống (WordCloud, biểu đồ giờ cao điểm).
-    \item \textbf{Giám sát Production:} Tích hợp hệ thống monitoring (Prometheus/Grafana) cho cụm ScyllaDB.
+    \item \textbf{Phân tích Cảm xúc (Sentiment Analysis):} Áp dụng Dictionary-based hoặc PhoBERT để phân loại cảm xúc tin nhắn.
+    \item \textbf{Trực quan hóa Dữ liệu (WordCloud):} Vẽ đám mây từ khóa thể hiện xu hướng thảo luận trong các phòng chat.
+    \item \textbf{Xử lý luồng (Streaming Processing):} Tích hợp Apache Kafka và Spark Streaming để phân tích cảm xúc tin nhắn theo thời gian thực (Real-time).
+    \item \textbf{Giám sát Production:} Tích hợp hệ thống monitoring (Prometheus/Grafana) cho cụm cơ sở dữ liệu ScyllaDB.
 \end{enumerate}
 
 \end{document}
