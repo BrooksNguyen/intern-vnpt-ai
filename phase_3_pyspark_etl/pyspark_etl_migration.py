@@ -6,7 +6,6 @@ import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# TODO: Đảm bảo môi trường thực tế sử dụng đúng Scala 2.12 và Spark 3.4.x để tránh xung đột thư viện.
 os.environ.setdefault('PYSPARK_SUBMIT_ARGS', '--packages com.datastax.spark:spark-cassandra-connector_2.12:3.4.1 pyspark-shell')
 
 from pyspark.sql import SparkSession
@@ -50,7 +49,6 @@ def main():
             
         logging.info(f"Successfully connected and initialized read stream in {time.time() - read_start:.2f} seconds.")
 
-        # Implementation of time-bucketing to prevent hot partitions
         df_transformed = df_source.withColumn("bucket_id", date_format(col("timestamp"), "yyyy-MM"))
 
         logging.info(f"Initiating data load to target ScyllaDB cluster at {SCYLLA_HOST}:{SCYLLA_PORT}...")
@@ -66,7 +64,6 @@ def main():
             
         write_time = time.time() - write_start
         logging.info(f"Data migration completed. Total write time: {write_time:.2f} seconds.")
-        # Khuyến nghị: Kiểm tra Spark UI hoặc dùng Accumulators để xem chính xác lượng bản ghi xử lý thay vì dùng .count()
 
     except Exception as e:
         logging.error(f"ETL Migration failed with error: {e}")

@@ -69,14 +69,12 @@ try:
 
     def get_random_ts():
         days = random.randint(0, 150)
-        # Giả lập phân phối giờ thực tế: Tránh 2-4h sáng, tập trung vào ban ngày và tối.
         hour_weights = [1, 1, 0, 0, 0, 1, 3, 5, 8, 8, 7, 6, 6, 5, 5, 6, 7, 8, 9, 10, 10, 8, 5, 2]
         hours = random.choices(range(24), weights=hour_weights)[0]
         minutes = random.randint(0, 59)
         return now - timedelta(days=days, hours=hours, minutes=minutes)
 
     def get_random_device():
-        # Phân phối thiết bị: 60% iOS, 30% Android, 5% Web, 5% Desktop
         return random.choices(devices, weights=[0.6, 0.3, 0.05, 0.05])[0]
 
     logging.info(f"Generating synthetic mock data (Approx. {MSG_LIMIT} records)...")

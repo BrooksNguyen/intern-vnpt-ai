@@ -7,7 +7,6 @@ from datetime import datetime
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# TODO: Đảm bảo môi trường thực tế sử dụng đúng Scala 2.12 và Spark 3.4.x để tránh xung đột thư viện.
 os.environ.setdefault('PYSPARK_SUBMIT_ARGS', '--packages com.datastax.spark:spark-cassandra-connector_2.12:3.4.1 pyspark-shell')
 
 from pyspark.sql import SparkSession
@@ -41,7 +40,6 @@ def main():
             
         logging.info(f"Successfully connected and initialized read stream in {time.time() - start_time:.2f} seconds.")
 
-        # Exact month subtraction using native datetime to avoid external dependencies
         current_date = datetime.now()
         target_month = current_date.month - args.months_old
         target_year = current_date.year + (target_month - 1) // 12
@@ -50,19 +48,14 @@ def main():
         try:
             cutoff_date = current_date.replace(year=target_year, month=target_month)
         except ValueError:
-            # Handle edge cases like March 31 -> February 31
             cutoff_date = current_date.replace(year=target_year, month=target_month, day=28)
             
         logging.info(f"Filtering records prior to cutoff date: {cutoff_date.strftime('%Y-%m-%d')}...")
 
-        # Filter and extract year/month for optimal Parquet partitioning
         df_cold = df.filter(col("timestamp") < lit(cutoff_date)) \
                     .withColumn("year", year(col("timestamp"))) \
                     .withColumn("month", month(col("timestamp")))
                     
-        # Note: Avoid using df.count() here to prevent double scanning (I/O overhead). 
-        # We rely on Spark UI or file system sizes for metrics.
-        
         logging.info(f"Exporting data to Parquet format at {args.output_dir}...")
         
         df_cold.write \
