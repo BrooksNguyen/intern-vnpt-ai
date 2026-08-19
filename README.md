@@ -2,158 +2,104 @@
 
 ## Giới thiệu
 
-Đây là dự án thực hiện trong quá trình thực tập tại VNPT AI với mục tiêu tìm hiểu và tối ưu hệ thống lưu trữ dữ liệu chat quy mô lớn. Dự án tập trung vào việc di chuyển dữ liệu từ Apache Cassandra sang ScyllaDB, xây dựng pipeline ETL bằng PySpark và thực hiện một số phân tích dữ liệu, NLP trên dữ liệu tin nhắn.
+Đây là dự án thực hiện trong quá trình thực tập tại VNPT AI với mục tiêu xây dựng, tối ưu hóa và phân tích dữ liệu cho một hệ thống lưu trữ tin nhắn chat quy mô lớn. Trọng tâm của dự án là việc di dời dữ liệu (ETL) từ Apache Cassandra sang ScyllaDB nhằm giải quyết bài toán Hot Partition, thiết lập luồng xử lý ngôn ngữ tự nhiên (NLP) trên tiếng Việt, và xây dựng Dashboard báo cáo trực quan.
+
+Dự án được chia làm **6 Giai đoạn (Phases)** tương ứng với lộ trình thực tập.
 
 ---
 
-## Mục tiêu
+## Lộ trình Dự án (6 Phases)
 
-- Xây dựng môi trường Big Data bằng Docker.
-- Mô phỏng dữ liệu hệ thống chat.
-- Phân tích các vấn đề hiệu năng của Apache Cassandra.
-- Giảm hiện tượng Hot Partition bằng cách thiết kế lại schema.
-- Xây dựng pipeline ETL bằng PySpark để di chuyển dữ liệu.
-- Phân tích dữ liệu tin nhắn bằng các kỹ thuật NLP.
-- Trực quan hóa dữ liệu bằng Streamlit.
+- **Phase 0: Thiết lập Môi trường Phát triển (Environment Setup)**
+  Triển khai hệ thống Big Data cục bộ bằng Docker Compose bao gồm: Apache Cassandra (nguồn), ScyllaDB (đích) và PySpark. Sinh dữ liệu giả lập (Mock Data) tạo ra hiện tượng Hot Partition để thử nghiệm.
+
+- **Phase 1: Phân tích Dữ liệu Khám phá (Data Profiling & EDA)**
+  Truy vấn và đánh giá dữ liệu trên Cassandra. Phát hiện phòng chat `room_999` chiếm đa số lượng tin nhắn, dẫn tới mất cân bằng tải (Hot Partition).
+
+- **Phase 2: Thiết kế Kiến trúc ScyllaDB (ScyllaDB Design)**
+  Thiết kế lại schema CSDL trên ScyllaDB. Chuyển đổi Partition Key từ `room_id` sang `(room_id, bucket_id)` để phân mảnh dữ liệu theo tháng (Time-bucketing), giải quyết dứt điểm vấn đề Hot Partition.
+
+- **Phase 3: Xây dựng Pipeline ETL bằng PySpark (PySpark ETL)**
+  Thiết lập luồng ETL chuyển dữ liệu từ Cassandra sang ScyllaDB. Tối ưu hóa cấu hình Spark I/O (batch size, concurrent writes) và xây dựng Cold Archiver lưu trữ dữ liệu cũ ra định dạng Parquet.
+
+- **Phase 4: Phân tích NLP trên Tin nhắn Chat (NLP Analysis)**
+  Tiền xử lý văn bản tiếng Việt (Text Preprocessing) sử dụng thư viện `underthesea` (tách từ, loại bỏ stopwords, bảo vệ emoticon). Phân tích cảm xúc (Sentiment Analysis) và trực quan hóa WordCloud để tìm ra xu hướng tương tác của người dùng. *(Đang triển khai đến phần Tiền xử lý)*
+
+- **Phase 5: Xây dựng API và Dashboard (Streamlit API)**
+  *(Dự kiến)* Xây dựng API cung cấp dữ liệu bằng FastAPI (có hỗ trợ phân trang) và xây dựng Dashboard báo cáo theo thời gian thực bằng Streamlit hiển thị các chỉ số phân tích NLP.
+
+---
+
+## Kiến trúc Hệ thống
+
+```text
+             Dữ liệu Chat (Mock)
+                    │
+                    ▼
+           Apache Cassandra (Phase 0-1)
+                    │
+                    ▼
+              PySpark ETL (Phase 3)
+       - Xử lý Time Bucketing (bucket_id)
+       - Lưu trữ lạnh (Cold Archiver -> Parquet)
+                    │
+                    ▼
+               ScyllaDB (Phase 2)
+                    │
+                    ▼
+             Phân tích NLP (Phase 4)
+       - Tiền xử lý văn bản (underthesea)
+       - Sentiment Analysis & WordCloud
+                    │
+                    ▼
+   FastAPI & Dashboard Streamlit (Phase 5)
+```
 
 ---
 
 ## Công nghệ sử dụng
 
-- Python
-- Apache Cassandra
-- ScyllaDB
-- Apache Spark (PySpark)
-- Docker & Docker Compose
-- Pandas
-- NLTK / SpaCy
-- Streamlit
+- **Ngôn ngữ & Thư viện:** Python 3.x, Pandas, Matplotlib, WordCloud, underthesea (NLP).
+- **Cơ sở dữ liệu:** Apache Cassandra (v4.1), ScyllaDB (latest).
+- **Xử lý Big Data:** Apache Spark (PySpark 3.4.x).
+- **Hạ tầng & Triển khai:** Docker, Docker Compose.
+- **Backend & Dashboard:** FastAPI, Streamlit.
 
 ---
 
-## Kiến trúc hệ thống
+## Hướng dẫn khởi chạy cục bộ
 
-```text
-             Dữ liệu giả lập
-                    │
-                    ▼
-          Apache Cassandra
-                    │
-                    ▼
-             PySpark ETL
-       - Làm sạch dữ liệu
-       - Time Bucketing
-       - Chuyển đổi dữ liệu
-                    │
-                    ▼
-                ScyllaDB
-                    │
-                    ▼
-             Phân tích NLP
-                    │
-                    ▼
-          Dashboard Streamlit
-```
-
----
-
-## Cấu trúc dự án
-
-```text
-vnpt-ai-internship/
-├── docker-compose.yml        # Cấu hình Cassandra, ScyllaDB và PySpark container
-├── README.md                 # Tài liệu hướng dẫn chạy và sửa lỗi
-├── scripts/
-│   ├── generate_mock_data.py # Sinh dữ liệu chat giả lập vào Cassandra (tạo hot partition room_999)
-│   ├── test_pyspark_conn.py  # Test kết nối Spark với Cassandra
-│   ├── test_scylla_conn.py   # Test kết nối ScyllaDB và tạo schema đích (phân mảnh tránh hot partition)
-│   └── pyspark_etl_migration.py # Pipeline ETL đọc Cassandra -> biến đổi -> ghi ScyllaDB
-└── notebooks/
-    └── 0_spark_connection_test.ipynb # File kiểm tra kết nối trên Jupyter Notebook
-```
-
----
-
-## Hướng dẫn chạy dự án
-
-### Bước 1. Khởi động Docker
-Đảm bảo Docker Desktop đã được bật, chạy lệnh sau ở root folder:
+### 1. Khởi động Cụm Docker
 ```bash
 docker compose up -d
 ```
-Xác nhận cả 3 container `cassandra_source`, `scylla_target` và `pyspark_workspace` đang chạy bằng `docker ps`.
+Xác nhận 3 container: `cassandra_source`, `scylla_target` và `pyspark_workspace` đang chạy.
 
-### Bước 2. Sinh dữ liệu giả lập (Cassandra)
-Sao chép tập lệnh sinh dữ liệu vào container PySpark và thực thi:
+### 2. Sinh dữ liệu giả lập (Phase 0)
 ```bash
-docker cp scripts/generate_mock_data.py pyspark_workspace:/home/jovyan/work/generate_mock_data.py
+docker cp phase_0_setup/generate_mock_data.py pyspark_workspace:/home/jovyan/work/
 docker exec -it pyspark_workspace python /home/jovyan/work/generate_mock_data.py
 ```
-Script sẽ tự động khởi tạo keyspace `chat_system` và bảng `chat_table`, nạp các tin nhắn chat giả lập (trong đó room_999 chứa 2000 tin nhắn tạo ra **Hot Partition**).
 
-### Bước 3. Khởi tạo schema đích trên ScyllaDB
-Tạo keyspace và bảng đích được thiết kế lại theo chiến lược tránh Hot Partition:
+### 3. Thiết lập Schema ScyllaDB (Phase 2)
 ```bash
-docker cp scripts/test_scylla_conn.py pyspark_workspace:/home/jovyan/work/test_scylla_conn.py
+docker cp scripts/test_scylla_conn.py pyspark_workspace:/home/jovyan/work/
 docker exec -it pyspark_workspace python /home/jovyan/work/test_scylla_conn.py
 ```
 
-### Bước 4. Chạy PySpark ETL di chuyển dữ liệu
-Thực thi di chuyển dữ liệu từ Cassandra sang ScyllaDB, tự động gán cột `bucket_id` theo dạng `yyyy-MM` dựa trên timestamp tin nhắn:
+### 4. Chạy PySpark ETL (Phase 3)
+Chạy script để migrate dữ liệu và tự động gán cột `bucket_id`:
 ```bash
-docker cp scripts/pyspark_etl_migration.py pyspark_workspace:/home/jovyan/work/pyspark_etl_migration.py
+docker cp phase_3_pyspark_etl/pyspark_etl_migration.py pyspark_workspace:/home/jovyan/work/
 docker exec -it -e PYTHONPATH="/usr/local/spark/python:/usr/local/spark/python/lib/py4j-0.10.9.7-src.zip" pyspark_workspace python /home/jovyan/work/pyspark_etl_migration.py
 ```
 
 ---
 
-## Thiết kế cơ sở dữ liệu
+## Troubleshooting (Lỗi thường gặp)
 
-### Thiết kế ban đầu (Cassandra)
-```text
-Partition Key: room_id
-Clustering Key: message_id
-```
-**Nhược điểm:** Dễ gặp vấn đề Hot Partition nếu một phòng chat có số lượng tin nhắn quá lớn (như phòng chat tổng của công ty hoặc nhóm bot tự động), dẫn đến kích thước partition vượt giới hạn khuyến nghị, truy vấn bị chậm và dữ liệu phân bố không đều giữa các node.
+1. **Lỗi `ModuleNotFoundError: No module named 'pyspark'`**
+   - Cần export biến `PYTHONPATH` khi chạy script `.py` trực tiếp trong container Jupyter (như lệnh ở Bước 4).
 
-### Thiết kế sau khi tối ưu (ScyllaDB)
-```text
-Partition Key: (room_id, bucket_id)
-Clustering Key: message_id
-```
-**Ưu điểm:** Bổ sung `bucket_id` (được định dạng theo `YYYY-MM` từ thời gian gửi tin nhắn) giúp chia nhỏ partition lớn theo thời gian, giảm tải cho từng node và đảm bảo khả năng mở rộng tốt hơn.
-
----
-
-## Lỗi thường gặp và cách xử lý (Troubleshooting)
-
-### 1. Lỗi `ModuleNotFoundError: No module named 'pyspark'`
-* **Nguyên nhân:** Khi chạy file `.py` trực tiếp bằng lệnh `python` bên trong container `pyspark_workspace`, Python (conda) không biết đường dẫn đến thư viện PySpark tích hợp sẵn trong thư mục Spark của container.
-* **Cách khắc phục:** Cần export biến môi trường `PYTHONPATH` trước khi chạy hoặc truyền trực tiếp vào lệnh thực thi như sau:
-  ```bash
-  docker exec -it -e PYTHONPATH="/usr/local/spark/python:/usr/local/spark/python/lib/py4j-0.10.9.7-src.zip" pyspark_workspace python <tên_script>.py
-  ```
-
-### 2. Lỗi `SimpleStrategy doesn't support tablet replication` khi tạo keyspace ở ScyllaDB
-* **Nguyên nhân:** Phiên bản ScyllaDB mới sử dụng cơ chế lưu trữ dạng tablet, không còn hỗ trợ `SimpleStrategy` khi khởi tạo keyspace.
-* **Cách khắc phục:** Sửa câu lệnh CQL tạo keyspace, chuyển sang sử dụng `NetworkTopologyStrategy` kết hợp với datacenter mặc định là `'datacenter1'`:
-  ```sql
-  CREATE KEYSPACE IF NOT EXISTS chat_system_target
-  WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
-  ```
-
----
-
-## Kiến thức đạt được & Hướng phát triển
-
-### Kiến thức đạt được
-- Thiết kế cơ sở dữ liệu NoSQL tối ưu hóa cho truy vấn (Query-driven design).
-- Quản lý vận hành Apache Cassandra và ScyllaDB.
-- Phát triển và tối ưu pipeline ETL sử dụng PySpark.
-- Sử dụng Docker trong môi trường Big Data cục bộ.
-
-### Hướng phát triển tiếp theo
-- Thiết lập cơ chế ghi nhận real-time ETL thông qua Apache Kafka.
-- Lập lịch định kỳ tiến trình ETL thông qua Apache Airflow.
-- Triển khai Spark Cluster thực tế.
-- Giám sát trạng thái cụm node thông qua Grafana.
+2. **Lỗi `SimpleStrategy doesn't support tablet replication` khi tạo Keyspace ở ScyllaDB**
+   - Chuyển sang sử dụng `NetworkTopologyStrategy` kết hợp datacenter `'datacenter1'` thay cho `SimpleStrategy`.
