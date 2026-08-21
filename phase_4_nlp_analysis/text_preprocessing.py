@@ -22,23 +22,25 @@ def load_stopwords(filepath="stopwords.txt"):
 
 ALL_STOPWORDS = load_stopwords()
 
-EMOTICONS_PATTERN = r'(=[)(]+|:\)|:\(|<3|\?{2,}|!{2,})'
+# Pre-compile regex for performance on large datasets
+EMOTICONS_PATTERN = re.compile(r'(=[)(]+|:\)|:\(|<3|\?{2,}|!{2,})')
+URL_PATTERN = re.compile(r'http[s]?://\S+|www\.\S+')
+PUNCT_PATTERN = re.compile(r'[^\w\s]', flags=re.UNICODE)
+SPACES_PATTERN = re.compile(r'\s+')
 
 def clean_text(text):
     if not text:
         return ""
 
     text = text.lower()
-    
-    text = re.sub(r'http[s]?://\S+|www\.\S+', '', text)
+    text = URL_PATTERN.sub('', text)
 
-    emoticons_found = re.findall(EMOTICONS_PATTERN, text)
+    emoticons_found = EMOTICONS_PATTERN.findall(text)
     for i, emo in enumerate(emoticons_found):
         text = text.replace(emo, f" EMO_{i} ", 1)
 
-    text = re.sub(r'[^\w\s]', '', text, flags=re.UNICODE)
-    
-    text = re.sub(r'\s+', ' ', text).strip()
+    text = PUNCT_PATTERN.sub('', text)
+    text = SPACES_PATTERN.sub(' ', text).strip()
 
     tokens = word_tokenize(text, format="list")
     
