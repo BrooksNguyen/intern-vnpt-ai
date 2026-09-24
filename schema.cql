@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS chat_table_bucketed (
     timestamp timestamp,
     PRIMARY KEY ((room_id, bucket_id), message_id)
 ) WITH CLUSTERING ORDER BY (message_id DESC)
-AND default_time_to_live = 2592000
+AND default_time_to_live = 15552000
+AND gc_grace_seconds = 864000
 AND compaction = {
     'class': 'TimeWindowCompactionStrategy',
     'compaction_window_unit': 'DAYS',

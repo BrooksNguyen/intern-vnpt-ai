@@ -41,9 +41,14 @@ try:
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
 
-    output_path = "/home/jovyan/work/phase_1_profiling/room_distribution.png"
-    plt.savefig(output_path)
-    logging.info(f"Saved: {output_path}")
+    from pathlib import Path
+    
+    # Dùng Path tương đối dựa theo vị trí file script đang chạy
+    OUTPUT_DIR = Path(__file__).resolve().parent
+    output_path = OUTPUT_DIR / "room_distribution.png"
+    
+    plt.savefig(str(output_path))
+    logging.info(f"Saved successfully to: {output_path}")
 
     spark.stop()
     sys.exit(0)

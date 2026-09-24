@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 HOST = os.getenv("SCYLLA_HOST", "scylla-target")
 PORT = int(os.getenv("SCYLLA_PORT", 9042))
-DEFAULT_TTL = int(os.getenv("DEFAULT_TTL", 2592000))
+DEFAULT_TTL = int(os.getenv("DEFAULT_TTL", 15552000))
 SCYLLA_DC = os.getenv("SCYLLA_DC", "datacenter1")
 
 logging.info(f"Connecting to ScyllaDB {HOST}:{PORT} (DC: {SCYLLA_DC})...")
@@ -51,6 +51,7 @@ session.execute(f"""
         PRIMARY KEY ((room_id, bucket_id), message_id)
     ) WITH CLUSTERING ORDER BY (message_id DESC)
     AND default_time_to_live = {DEFAULT_TTL}
+    AND gc_grace_seconds = 864000
     AND compaction = {{
         'class': 'TimeWindowCompactionStrategy',
         'compaction_window_unit': 'DAYS',

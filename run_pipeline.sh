@@ -8,6 +8,9 @@ echo "Setting up ScyllaDB schema..."
 SCYLLA_HOST=127.0.0.1 SCYLLA_PORT=9043 python3 phase_2_scylla_design/scylla_ddl_manager.py
 
 echo "Running ETL migration (Docker)..."
+# LƯU Ý: Đường dẫn /home/jovyan/work/ là thư mục BÊN TRONG container Docker
+# (được mount từ thư mục gốc dự án qua docker-compose.yml)
+# KHÔNG chạy dòng lệnh này trực tiếp trên máy host!
 docker exec -e CASSANDRA_HOST=cassandra_source \
     -e CASSANDRA_PORT=9042 \
     -e SCYLLA_HOST=scylla_target \

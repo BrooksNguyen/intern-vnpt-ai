@@ -366,6 +366,34 @@ Quy trình làm sạch dữ liệu bao gồm 5 bước tiêu chuẩn:
 
 
 % ============================================================
+% PHASE 5: DASHBOARD
+% ============================================================
+\newpage
+\section{Phase 5: Backend Simulation \& Dashboard Streamlit}
+\label{sec:phase5}
+
+\subsection{Mục tiêu}
+Xây dựng giao diện trực quan hóa dữ liệu bằng Streamlit và mô phỏng truy vấn backend lấy tin nhắn theo phân trang (pagination) và lùi tháng (backtracking).
+
+\subsection{Biểu đồ phân tích NLP}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{wordcloud_room_999.png}
+        \caption{Đám mây từ vựng tiếng Việt.}
+        \label{fig:wordcloud}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{sentiment_trend.png}
+        \caption{Xu hướng cảm xúc theo thời gian.}
+        \label{fig:sentiment}
+    \end{subfigure}
+    \caption{Phân tích ngôn ngữ tự nhiên từ nội dung chat.}
+    \label{fig:nlp_charts}
+\end{figure}
+
+% ============================================================
 % TỔNG KẾT
 % ============================================================
 \newpage
@@ -381,11 +409,12 @@ Quy trình làm sạch dữ liệu bao gồm 5 bước tiêu chuẩn:
 \toprule
 \textbf{Phase} & \textbf{Nội dung} & \textbf{Trạng thái} \\
 \midrule
-Phase 0 & Thiết lập Docker Compose, sinh Mock Data & Hoàn thành \\
-Phase 1 & Phân tích EDA, phát hiện Hot Partition & Hoàn thành \\
-Phase 2 & Thiết kế schema ScyllaDB, Time-bucketing & Hoàn thành \\
-Phase 3 & Pipeline ETL, Tối ưu I/O, Cold Archiver & Hoàn thành \\
-Phase 4 & Tiền xử lý văn bản tiếng Việt (Text Preprocessing) & Hoàn thành \\
+Phase 0 & Thiết lập Docker Compose, sinh Mock Data & Hoàn thành (100\%) \\
+Phase 1 & Phân tích EDA, phát hiện Hot Partition & Hoàn thành (100\%) \\
+Phase 2 & Thiết kế schema ScyllaDB, Time-bucketing & Hoàn thành (100\%) \\
+Phase 3 & Pipeline ETL, Tối ưu I/O, Cold Archiver & Hoàn thành (100\%) \\
+Phase 4 & Tiền xử lý văn bản tiếng Việt \& NLP & Hoàn thành (100\%) \\
+Phase 5 & Backend Simulation \& Dashboard Streamlit & Hoàn thành (100\%) \\
 \bottomrule
 \end{tabular}
 \end{table}

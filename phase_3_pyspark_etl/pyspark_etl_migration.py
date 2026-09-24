@@ -65,6 +65,19 @@ def main():
         write_time = time.time() - write_start
         logging.info(f"Data migration completed. Total write time: {write_time:.2f} seconds.")
 
+        src_count = df_source.count()
+        tgt_df = spark.read.format("org.apache.spark.sql.cassandra") \
+            .options(table="chat_table_bucketed", keyspace="chat_system_target") \
+            .option("spark.cassandra.connection.host", SCYLLA_HOST).load()
+        tgt_count = tgt_df.count()
+
+        logging.info("=== KẾT QUẢ ĐỐI SOÁT DỮ LIỆU ===")
+        logging.info(f"Cassandra (Source): {src_count:,} rows")
+        logging.info(f"ScyllaDB  (Target): {tgt_count:,} rows")
+
+        assert src_count == tgt_count, "❌ CẢNH BÁO: Số lượng bản ghi không khớp!"
+        logging.info("✅ Migration toàn vẹn 100%, không thất thoát dữ liệu!")
+
     except Exception as e:
         logging.error(f"ETL Migration failed with error: {e}")
         sys.exit(1)

@@ -40,19 +40,15 @@ def main():
             
         logging.info(f"Successfully connected and initialized read stream in {time.time() - start_time:.2f} seconds.")
 
+        from dateutil.relativedelta import relativedelta
         current_date = datetime.now()
-        target_month = current_date.month - args.months_old
-        target_year = current_date.year + (target_month - 1) // 12
-        target_month = (target_month - 1) % 12 + 1
+        cutoff_date = current_date - relativedelta(months=args.months_old)
+        cutoff_bucket = cutoff_date.strftime("%Y-%m")
         
-        try:
-            cutoff_date = current_date.replace(year=target_year, month=target_month)
-        except ValueError:
-            cutoff_date = current_date.replace(year=target_year, month=target_month, day=28)
-            
-        logging.info(f"Filtering records prior to cutoff date: {cutoff_date.strftime('%Y-%m-%d')}...")
+        logging.info(f"Filtering cold buckets older than: {cutoff_bucket}...")
 
-        df_cold = df.filter(col("timestamp") < lit(cutoff_date)) \
+        # Filter trên partition key 'bucket_id' để tối ưu Partition Pruning (Zero Full Scan)
+        df_cold = df.filter(col("bucket_id") < lit(cutoff_bucket)) \
                     .withColumn("year", year(col("timestamp"))) \
                     .withColumn("month", month(col("timestamp")))
                     
