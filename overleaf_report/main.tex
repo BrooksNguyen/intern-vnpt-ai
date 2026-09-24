@@ -251,7 +251,7 @@ Rủi ro & Hot Partition & Không \\
 
 \begin{itemize}[noitemsep]
     \item \textbf{TimeWindowCompactionStrategy (TWCS):} Nhóm SSTable theo khung thời gian 1 ngày, tối ưu hóa quá trình xóa dữ liệu cũ.
-    \item \textbf{TTL:} \texttt{default\_time\_to\_live = 2592000} (30 ngày). Tỷ lệ TTL/window duy trì $< 50$ theo giới hạn của ScyllaDB.
+    \item \textbf{TTL:} \texttt{default\_time\_to\_live = 15552000} (180 ngày). Đảm bảo dữ liệu tồn tại đủ lâu để Cold Archiver (6 tháng) kịp sao lưu sang Parquet.
     \item \textbf{Tombstone:} Bản ghi hết hạn giữ tombstone trong \texttt{gc\_grace\_seconds} (10 ngày) để hoàn tất sync giữa các replica.
 \end{itemize}
 
