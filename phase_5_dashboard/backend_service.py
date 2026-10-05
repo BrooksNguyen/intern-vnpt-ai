@@ -8,7 +8,10 @@ import sys
 import logging
 from datetime import datetime
 
-from cassandra.cluster import Cluster
+try:
+    from cassandra.cluster import Cluster
+except ImportError:
+    Cluster = None
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -30,6 +33,8 @@ class ChatBackendService:
         """Connect to ScyllaDB cluster or fallback to mock mode."""
         logging.info(f"Connecting to ScyllaDB at {self.host}:{self.port}...")
         try:
+            if Cluster is None:
+                raise ImportError("cassandra-driver not available. Running in Mock Mode.")
             self.cluster = Cluster([self.host], port=self.port, connect_timeout=3)
             self.session = self.cluster.connect('chat_system_target')
             self.is_mock = False
