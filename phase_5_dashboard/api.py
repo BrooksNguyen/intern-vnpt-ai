@@ -123,5 +123,23 @@ def get_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/analyze/kaggle")
+def analyze_kaggle(
+    dataset: str = Query(..., description="Kaggle Dataset Slug (e.g., 'kazanova/sentiment140')"),
+    text_column: Optional[str] = Query(None, description="Optional specific column name to analyze")
+):
+    """
+    Downloads a dataset from Kaggle and performs NLP analysis on it.
+    Requires KAGGLE_USERNAME and KAGGLE_KEY environment variables.
+    """
+    try:
+        from kaggle_analyzer import analyze_kaggle_dataset
+        result = analyze_kaggle_dataset(dataset, text_column)
+        return result
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)

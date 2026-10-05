@@ -229,6 +229,95 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // --- Kaggle Analyzer Logic ---
+    const kaggleBtn = document.getElementById('kaggle-btn');
+    const kaggleSlug = document.getElementById('kaggle-slug');
+    const kaggleColumn = document.getElementById('kaggle-column');
+    const kaggleContainer = document.getElementById('kaggle-results-container');
+
+    kaggleBtn.addEventListener('click', async () => {
+        const slug = kaggleSlug.value.trim();
+        if (!slug) {
+            alert('Please enter a valid Kaggle Dataset Slug (e.g., kazanova/sentiment140)');
+            return;
+        }
+
+        kaggleBtn.innerText = 'Analyzing...';
+        kaggleBtn.disabled = true;
+        kaggleContainer.innerHTML = `<div class="empty-state"><p>Downloading and analyzing dataset via Kaggle API. This may take a minute depending on the dataset size...</p></div>`;
+        kaggleContainer.style.opacity = '0.7';
+
+        let url = `${API_BASE}/analyze/kaggle?dataset=${encodeURIComponent(slug)}`;
+        if (kaggleColumn.value.trim()) {
+            url += `&text_column=${encodeURIComponent(kaggleColumn.value.trim())}`;
+        }
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.detail || 'Analysis failed');
+            }
+
+            kaggleContainer.style.opacity = '1';
+            
+            // Build Results UI
+            let keywordsHtml = '';
+            if (data.top_keywords) {
+                keywordsHtml = data.top_keywords.map(kw => 
+                    `<span style="background:var(--bg-light); padding:4px 8px; border-radius:4px; margin-right:8px; display:inline-block; margin-bottom:8px; border:1px solid var(--border-color);">
+                        ${kw.word} <strong style="color:var(--vnpt-blue-main)">${kw.count}</strong>
+                    </span>`
+                ).join('');
+            }
+
+            kaggleContainer.innerHTML = `
+                <div style="animation: fade-in 0.4s ease forwards; width:100%">
+                    <h3 style="color:var(--vnpt-blue-dark); margin-bottom:1.5rem; display:flex; justify-content:space-between;">
+                        Dataset: ${data.dataset}
+                        <span style="font-size:0.8rem; background:rgba(0,180,216,0.1); color:var(--vnpt-blue-main); padding:4px 12px; border-radius:20px; display:flex; align-items:center;">Analysis Complete</span>
+                    </h3>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:0.5rem">CSV File Analyzed</div>
+                            <div style="font-size:1.1rem; font-weight:600">${data.csv_analyzed}</div>
+                        </div>
+                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:0.5rem">Target Column</div>
+                            <div style="font-size:1.1rem; font-weight:600">${data.column_analyzed}</div>
+                        </div>
+                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:0.5rem">Sample Size</div>
+                            <div style="font-size:1.1rem; font-weight:600">${data.total_rows_sampled.toLocaleString()} Rows</div>
+                        </div>
+                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:0.5rem">Sentiment Dist.</div>
+                            <div style="font-size:1rem; font-weight:600;">
+                                <span style="color:#34C759">Pos: ${data.sentiment_distribution.positive}</span> | 
+                                <span style="color:#FF3B30">Neg: ${data.sentiment_distribution.negative}</span> | 
+                                <span style="color:#8E8E93">Neu: ${data.sentiment_distribution.neutral}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:1rem">Top Extracted Keywords</div>
+                        <div>${keywordsHtml || 'No significant keywords extracted.'}</div>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            kaggleContainer.style.opacity = '1';
+            kaggleContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>Error: ${error.message}</p></div>`;
+        } finally {
+            kaggleBtn.innerText = 'Analyze Dataset';
+            kaggleBtn.disabled = false;
+        }
+    });
+
+    
     // Add simple fade-in keyframe dynamically for messages
     const style = document.createElement('style');
     style.innerHTML = `@keyframes fade-in { to { opacity: 1; transform: translateY(0); } }`;

@@ -6,7 +6,9 @@ requires-python = ">=3.9"
 dependencies = [
     "fastapi",
     "uvicorn",
-    "cassandra-driver"
+    "cassandra-driver",
+    "pandas",
+    "kaggle"
 ]
 
 [tool.vercel]

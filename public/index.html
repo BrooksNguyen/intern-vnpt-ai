@@ -232,6 +232,28 @@
                     </div>
                 </div>
             </section>
+            
+            <section class="dashboard-section">
+                <div class="section-title">
+                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Kaggle Dataset Analyzer
+                </div>
+                <div class="explorer-card">
+                    <p style="margin-bottom:1.5rem; color:var(--text-muted)">Import real data from Kaggle by providing a dataset slug (e.g., <code>kazanova/sentiment140</code>) to perform on-the-fly NLP analysis.</p>
+                    <div class="search-controls">
+                        <input type="text" id="kaggle-slug" class="form-select" placeholder="Dataset Slug (e.g., username/dataset-name)">
+                        <input type="text" id="kaggle-column" class="form-select" placeholder="Target Text Column (Optional)" style="flex: 0.5;">
+                        <button id="kaggle-btn" class="btn-primary">Analyze Dataset</button>
+                    </div>
+                    
+                    <div class="chat-container" id="kaggle-results-container" style="height: auto; min-height: 200px; padding: 2rem;">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M2 12h4l3-9 5 18 3-9h5"></path></svg>
+                            <p>Enter a dataset slug to begin analysis</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 
