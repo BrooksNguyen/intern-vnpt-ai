@@ -1,8 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // API base path is relative since frontend and backend are on the same domain in Vercel
     const API_BASE = '/api';
 
-    const statusVal = document.getElementById('status-val');
+    // DOM Elements
+    const statusBadge = document.getElementById('api-status');
+    const statusText = statusBadge.querySelector('.status-text');
     const roomsVal = document.getElementById('rooms-val');
     const msgsVal = document.getElementById('msgs-val');
     
@@ -10,75 +11,94 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadBtn = document.getElementById('load-btn');
     const chatContainer = document.getElementById('chat-container');
 
-    // Fetch initial stats
+    // Smooth counter animation
+    function animateValue(obj, start, end, duration) {
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+
+    // Fetch initial metrics with graceful error handling
     async function fetchStats() {
         try {
             const healthRes = await fetch(`${API_BASE}/health`);
             const healthData = await healthRes.json();
             
             if (healthData.status === 'healthy') {
-                statusVal.innerHTML = '🟢 Healthy';
-                statusVal.style.color = '#4ade80';
+                statusBadge.classList.add('healthy');
+                statusBadge.classList.remove('error');
+                statusText.innerText = 'Connected to ScyllaDB';
             } else {
-                statusVal.innerHTML = '🔴 DB Error';
-                statusVal.style.color = '#f87171';
+                throw new Error('Unhealthy');
             }
 
             const statsRes = await fetch(`${API_BASE}/stats`);
             const statsData = await statsRes.json();
             
-            roomsVal.innerText = statsData.total_rooms || 0;
-            msgsVal.innerText = (statsData.total_messages || 0).toLocaleString();
+            const totalRooms = statsData.total_rooms || 0;
+            const totalMsgs = statsData.total_messages || 0;
+
+            animateValue(roomsVal, 0, totalRooms, 1000);
+            animateValue(msgsVal, 0, totalMsgs, 1500);
 
         } catch (error) {
-            console.error('Error fetching stats:', error);
-            statusVal.innerHTML = '🟡 API Offline';
-            statusVal.style.color = '#facc15';
+            console.error('API Error:', error);
+            statusBadge.classList.add('error');
+            statusBadge.classList.remove('healthy');
+            statusText.innerText = 'Offline';
+            roomsVal.innerText = 'N/A';
+            msgsVal.innerText = 'N/A';
         }
     }
 
-    // Format date helper
     function formatDate(dateString) {
         if (!dateString) return 'N/A';
         const d = new Date(dateString);
-        return d.toLocaleString();
+        return d.toLocaleDateString('en-US', { 
+            month: 'short', day: 'numeric', 
+            hour: '2-digit', minute: '2-digit' 
+        });
     }
 
-    // Get device emoji
     function getDeviceEmoji(device) {
-        const map = {
-            'ios': '📱',
-            'android': '🤖',
-            'web': '🌐',
-            'desktop': '💻'
-        };
-        return map[device] || '❓';
+        const map = { 'ios': '📱', 'android': '🤖', 'web': '🌐', 'desktop': '💻' };
+        return map[device] || '💬';
     }
 
-    // Load messages
+    // Fetch and render messages
     async function loadMessages() {
         const roomId = roomInput.value.trim();
         if (!roomId) return;
 
-        loadBtn.innerText = 'Loading...';
+        // UI Loading state
+        loadBtn.innerText = 'Loading';
         loadBtn.disabled = true;
+        chatContainer.style.opacity = '0.5';
 
         try {
             const res = await fetch(`${API_BASE}/messages?room_id=${roomId}&limit=50`);
             const data = await res.json();
 
-            chatContainer.innerHTML = ''; // Clear chat
+            chatContainer.innerHTML = ''; 
+            chatContainer.style.opacity = '1';
 
             if (data.data && data.data.length > 0) {
                 data.data.forEach((msg, index) => {
                     const msgDiv = document.createElement('div');
                     msgDiv.className = 'message';
-                    msgDiv.style.animationDelay = `${index * 0.05}s`;
+                    msgDiv.style.animationDelay = `${index * 0.04}s`; // Staggered fade in
                     
                     msgDiv.innerHTML = `
                         <div class="message-header">
                             <span class="message-user">${msg.user_id} ${getDeviceEmoji(msg.device)}</span>
-                            <span>${msg.bucket_id} • ${formatDate(msg.timestamp)}</span>
+                            <span>${formatDate(msg.timestamp)}</span>
                         </div>
                         <div class="message-content">
                             ${msg.content}
@@ -86,15 +106,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                     chatContainer.appendChild(msgDiv);
                 });
+                
+                // Smooth scroll to top of chat
+                chatContainer.scrollTop = 0;
             } else {
-                chatContainer.innerHTML = `<div class="empty-state">No messages found for ${roomId}.</div>`;
+                chatContainer.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M10 9l5 3-5 3V9z"></path></svg>
+                        <p>No messages found in ${roomId}</p>
+                    </div>`;
             }
 
         } catch (error) {
             console.error('Error fetching messages:', error);
-            chatContainer.innerHTML = `<div class="empty-state" style="color: #f87171;">Failed to fetch messages. Check API connection.</div>`;
+            chatContainer.style.opacity = '1';
+            chatContainer.innerHTML = `
+                <div class="empty-state" style="color: #FF3B30;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <p>Failed to connect to the API</p>
+                </div>`;
         } finally {
-            loadBtn.innerText = 'Explore Messages ✨';
+            loadBtn.innerText = 'Explore';
             loadBtn.disabled = false;
         }
     }
@@ -104,9 +136,11 @@ document.addEventListener('DOMContentLoaded', () => {
     roomInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             loadMessages();
+            // Blur input to dismiss keyboard on mobile (iOS friendly)
+            roomInput.blur();
         }
     });
 
-    // Initialize
+    // Boot up
     fetchStats();
 });
