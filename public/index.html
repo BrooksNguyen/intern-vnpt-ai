@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VNPT-AI | Data Pipeline Dashboard</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/VNPT_Logo.svg/1200px-VNPT_Logo.svg.png" alt="VNPT Logo">
+            </div>
+            <div class="header-text">
+                <h1>Data Pipeline & NLP Analytics</h1>
+                <p>Real-time ScyllaDB Chat Explorer</p>
+            </div>
+        </header>
+
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <h3>API Status</h3>
+                <div class="metric-value" id="status-val">Checking...</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total Rooms</h3>
+                <div class="metric-value" id="rooms-val">--</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total Messages</h3>
+                <div class="metric-value" id="msgs-val">--</div>
+            </div>
+        </section>
+
+        <main class="dashboard-main">
+            <div class="explorer-card glass-panel">
+                <div class="explorer-header">
+                    <h2>💬 Chat Room Explorer</h2>
+                    <p>Powered by Backtracking Pagination</p>
+                </div>
+                
+                <div class="search-bar">
+                    <input type="text" id="room-input" placeholder="Enter Room ID (e.g. room_999)" value="room_999">
+                    <button id="load-btn">Explore Messages ✨</button>
+                </div>
+
+                <div class="chat-container" id="chat-container">
+                    <div class="empty-state">Enter a room ID and click explore to view messages.</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
