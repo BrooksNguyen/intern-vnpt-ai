@@ -1,20 +1,20 @@
 #!/bin/bash
 set -e
 
-echo "Bắt đầu quá trình cài đặt Docker Desktop cho macOS (Apple Silicon)..."
+echo "Starting Docker Desktop installation for macOS (Apple Silicon)..."
 
 DMG_PATH="Docker.dmg"
 URL="https://desktop.docker.com/mac/main/arm64/Docker.dmg"
 
 if [ ! -f "$DMG_PATH" ]; then
-    echo "Đang tải xuống tệp cài đặt DMG từ Docker..."
+    echo "Downloading Docker DMG installer..."
     curl -L -k -o "$DMG_PATH" "$URL"
-    echo "Tải xuống hoàn tất."
+    echo "Download complete."
 else
-    echo "Phát hiện tệp DMG đã tồn tại trong hệ thống. Bỏ qua bước tải xuống."
+    echo "Existing DMG file detected. Skipping download."
 fi
 
-echo "Đang tiến hành mount tệp DMG..."
+echo "Mounting DMG file..."
 mount_info=$(hdiutil attach "$DMG_PATH" -nobrowse)
 echo "$mount_info"
 mount_point=$(echo "$mount_info" | grep "/Volumes/Docker" | awk -F'\t' '{print $NF}' | xargs)
@@ -23,26 +23,26 @@ if [ -z "$mount_point" ]; then
     mount_point="/Volumes/Docker"
 fi
 
-echo "Đã mount thành công tại phân vùng: $mount_point"
+echo "Successfully mounted at: $mount_point"
 
-echo "Kiểm tra và tắt dịch vụ Docker nếu đang chạy để tránh lỗi File in use..."
+echo "Checking for running Docker instances to prevent 'File in use' errors..."
 if pgrep -xq "Docker"; then
-    echo "Phát hiện Docker đang chạy. Tiến hành đóng ứng dụng..."
+    echo "Docker is currently running. Shutting down..."
     killall Docker || true
     sleep 3
 fi
 
-echo "Đang sao chép ứng dụng Docker vào thư mục /Applications (Quá trình này có thể mất vài phút)..."
+echo "Copying Docker.app to /Applications (this may take a few minutes)..."
 cp -R "$mount_point/Docker.app" "/Applications/"
 
-echo "Đang unmount phân vùng cài đặt..."
+echo "Unmounting installer volume..."
 hdiutil detach "$mount_point"
 
-echo "Đang dọn dẹp các tệp tin tạm..."
+echo "Cleaning up temporary files..."
 rm -f "$DMG_PATH"
 
-echo "Cài đặt Docker Desktop thành công."
-echo "Đang khởi động dịch vụ Docker..."
+echo "Docker Desktop installed successfully."
+echo "Launching Docker..."
 open -a Docker
 
-echo "Tiến trình hoàn tất. Vui lòng kiểm tra trạng thái hoạt động của Docker trên thanh Menu Bar."
+echo "Installation complete. Please check the Docker status in the Menu Bar."
