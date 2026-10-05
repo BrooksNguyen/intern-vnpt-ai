@@ -1,56 +1,56 @@
-# 📂 Cấu trúc Mã nguồn Dự án (Source Structure)
+# 📂 Project Source Structure
 
-Dự án được phân chia thành **6 thư mục chính (Phase 0 đến Phase 5)** tương ứng với lộ trình thực tập, kết hợp cùng các file cấu hình và kịch bản (scripts) tự động hóa nằm ở thư mục gốc.
+The project is divided into **6 main directories (Phase 0 to Phase 5)** corresponding to the internship roadmap, along with configuration files and automation scripts located in the root directory.
 
-## 🗂️ Thư mục gốc (Root Directory)
-- **`docker-compose.yml`**: Tệp cấu hình Docker Compose để khởi chạy cụm dịch vụ gồm Cassandra (Source), ScyllaDB (Target), và PySpark.
-- **`run_pipeline.sh`**: Bash script gom toàn bộ quy trình (Sinh mock data ➔ Khởi tạo Schema ➔ Chạy PySpark ETL ➔ Sinh biểu đồ ➔ Chạy NLP) để thực thi chỉ với 1 lệnh (One-click execution).
-- **`requirements.txt`**: Danh sách toàn bộ thư viện Python (Dependencies) cần thiết cho dự án.
-- **`schema.cql`**: Tệp DDL (Data Definition Language) chứa câu lệnh khởi tạo Keyspace và Bảng trên ScyllaDB (có cấu hình TTL và gc_grace_seconds).
-- **`gen_real_charts.py`**: Script kết nối thẳng vào database (Cassandra/ScyllaDB) để trực quan hoá dữ liệu sau khi migrate.
-
----
-
-## 🗂️ 1. `phase_0_setup/` (Sinh dữ liệu & Khởi tạo)
-Chứa các script thiết lập môi trường và sinh dữ liệu giả lập ban đầu.
-- **`generate_mock_data.py`**: Sinh ngẫu nhiên dữ liệu chat giả lập, đẩy trực tiếp vào Cassandra. Hỗ trợ tạo hiện tượng "Hot Partition" tại `room_999` để phục vụ bài toán tối ưu hoá.
+## 🗂️ Root Directory
+- **`docker-compose.yml`**: Docker Compose configuration file to launch the service cluster consisting of Cassandra (Source), ScyllaDB (Target), and PySpark.
+- **`run_pipeline.sh`**: A bash script that bundles the entire process (Generate mock data ➔ Initialize Schema ➔ Run PySpark ETL ➔ Generate charts ➔ Run NLP) for one-click execution.
+- **`requirements.txt`**: List of all required Python libraries (Dependencies) for the project.
+- **`schema.cql`**: DDL (Data Definition Language) file containing commands to initialize the Keyspace and Table on ScyllaDB (with TTL and gc_grace_seconds configurations).
+- **`gen_real_charts.py`**: A script that connects directly to the databases (Cassandra/ScyllaDB) to visualize data post-migration.
 
 ---
 
-## 🗂️ 2. `phase_1_profiling/` (Khám phá dữ liệu - EDA)
-Chứa các notebook và script dùng để phân tích hiện trạng dữ liệu.
-- **`eda_plot.py`**: Vẽ biểu đồ từ dữ liệu phân mảnh để phân tích và đánh giá tình trạng tắc nghẽn (bottleneck) ở mức độ partition.
+## 🗂️ 1. `phase_0_setup/` (Data Generation & Initialization)
+Contains scripts for environment setup and initial mock data generation.
+- **`generate_mock_data.py`**: Randomly generates synthetic chat data and pushes it directly into Cassandra. Simulates the "Hot Partition" phenomenon at `room_999` to support the optimization problem.
 
 ---
 
-## 🗂️ 3. `phase_2_scylla_design/` (Thiết kế CSDL ScyllaDB)
-Tối ưu hóa Data Modeling và áp dụng Time-bucketing.
-- **`scylla_ddl_manager.py`**: Kết nối và thực thi các câu lệnh CQL tạo bảng mới trên ScyllaDB, áp dụng cấu trúc Primary Key nâng cao: `((room_id, bucket_id), message_id)` để chia nhỏ dữ liệu theo tháng.
+## 🗂️ 2. `phase_1_profiling/` (Exploratory Data Analysis - EDA)
+Contains notebooks and scripts used to analyze current data conditions.
+- **`eda_plot.py`**: Generates charts from partitioned data to analyze and evaluate bottleneck conditions at the partition level.
 
 ---
 
-## 🗂️ 4. `phase_3_pyspark_etl/` (Luồng dữ liệu ETL)
-Luồng chuyển đổi và lưu trữ dữ liệu quy mô lớn.
-- **`pyspark_etl_migration.py`**: Script PySpark đọc dữ liệu từ Cassandra, xử lý logic thêm cột `bucket_id` dựa trên timestamp, và ghi song song (batch write) sang ScyllaDB.
-- **`cold_archiver.py`**: Script PySpark ứng dụng cơ chế *Partition Pruning*, tự động quét và nén các dữ liệu cũ (lạnh) thành định dạng Parquet để đưa vào lưu trữ lạnh (Cold Storage).
+## 🗂️ 3. `phase_2_scylla_design/` (ScyllaDB Database Design)
+Data Modeling optimization and Time-bucketing application.
+- **`scylla_ddl_manager.py`**: Connects and executes CQL commands to create new tables on ScyllaDB, applying an advanced Primary Key structure: `((room_id, bucket_id), message_id)` to partition data by month.
 
 ---
 
-## 🗂️ 5. `phase_4_nlp_analysis/` (Phân tích Ngôn ngữ Tự nhiên)
-Trích xuất thông tin hữu ích từ các tin nhắn chat.
-- **`nlp_analytics_pipeline.py`**: Pipeline toàn diện tích hợp thư viện `underthesea` để tiền xử lý văn bản tiếng Việt. Phân tích cảm xúc (Sentiment Analysis), sinh Top 50 Keywords và vẽ biểu đồ WordCloud. Hỗ trợ chế độ `--offline` để sinh dữ liệu mẫu.
-- **`stopwords.txt`**: Từ điển các từ dừng (stopwords) tiếng Việt được tuỳ chỉnh cho hệ thống chat.
+## 🗂️ 4. `phase_3_pyspark_etl/` (ETL Data Pipeline)
+Large-scale data transformation and storage pipeline.
+- **`pyspark_etl_migration.py`**: PySpark script that reads data from Cassandra, processes logic to add a `bucket_id` column based on the timestamp, and performs parallel batch writes to ScyllaDB.
+- **`cold_archiver.py`**: PySpark script utilizing *Partition Pruning* to automatically scan and compress cold/old data into Parquet format for Cold Storage.
 
 ---
 
-## 🗂️ 6. `phase_5_dashboard/` (API & Giao diện Dashboard)
-Trực quan hoá dữ liệu cho người dùng cuối và Mentor.
-- **`api.py`**: Dịch vụ Web Backend xây dựng bằng **FastAPI**, cung cấp endpoint `/messages` hỗ trợ phân trang (Pagination) để truy vấn dữ liệu nhanh từ ScyllaDB.
-- **`backend_service.py`**: Lõi xử lý logic truy vấn ScyllaDB, nổi bật với thuật toán **Backtracking Pagination** (tự động lùi về các tháng trước nếu bucket hiện tại không đủ dữ liệu).
-- **`app.py`**: Giao diện Web Frontend xây dựng bằng **Streamlit**. Tích hợp hiển thị schema, biểu đồ cảm xúc, WordCloud, chat box, và tóm tắt bài học (Lessons Learned) thành 4 Tab trực quan, chuyên nghiệp.
+## 🗂️ 5. `phase_4_nlp_analysis/` (Natural Language Processing)
+Extracts actionable insights from chat messages.
+- **`nlp_analytics_pipeline.py`**: Comprehensive pipeline integrating the `underthesea` library for Vietnamese text preprocessing. Performs Sentiment Analysis, generates Top 50 Keywords, and draws WordClouds. Supports an `--offline` mode with mock data generation.
+- **`stopwords.txt`**: Custom Vietnamese stopwords dictionary for the chat system.
 
 ---
 
-## 🗂️ Các thư mục hỗ trợ
-- **`Intern_Guide/`**: Toàn bộ tài liệu hướng dẫn nghiệp vụ và yêu cầu bài toán từ Mentor cho các tuần thực tập.
-- **`overleaf_report/`**: Mã nguồn LaTeX của báo cáo chuyên đề thực tập cuối kỳ, đồng bộ với các kết quả xuất ra (ảnh, bảng biểu).
+## 🗂️ 6. `phase_5_dashboard/` (API & Dashboard Interface)
+Data visualization for end-users and Mentors.
+- **`api.py`**: Web Backend service built with **FastAPI**, providing a `/messages` endpoint supporting Pagination for fast querying from ScyllaDB.
+- **`backend_service.py`**: Core ScyllaDB querying logic, highlighting the **Backtracking Pagination** algorithm (automatically backtracking to previous months if the current bucket lacks sufficient data).
+- **`app.py`**: Web Frontend interface built with **Streamlit**. Integrates schema displays, sentiment charts, WordClouds, ETL Pipeline visualizations, a chat box, and Lessons Learned summaries into 5 intuitive, professional Tabs.
+
+---
+
+## 🗂️ Supporting Directories
+- **`Intern_Guide/`**: Complete operational guidelines and problem requirements from Mentors for the internship weeks.
+- **`overleaf_report/`**: LaTeX source code for the final internship specialized report, synced with the output results (images, tables).

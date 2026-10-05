@@ -1,105 +1,123 @@
-# Dự án Thực tập VNPT AI - Tối ưu hóa Dữ liệu Hệ thống Chat
+# VNPT AI Internship — Chat System Data Optimization
 
-## Giới thiệu
+## Overview
 
-Đây là dự án thực hiện trong quá trình thực tập tại VNPT AI với mục tiêu xây dựng, tối ưu hóa và phân tích dữ liệu cho một hệ thống lưu trữ tin nhắn chat quy mô lớn. Trọng tâm của dự án là việc di dời dữ liệu (ETL) từ Apache Cassandra sang ScyllaDB nhằm giải quyết bài toán Hot Partition, thiết lập luồng xử lý ngôn ngữ tự nhiên (NLP) trên tiếng Việt, và xây dựng Dashboard báo cáo trực quan.
+This project was developed during an internship at VNPT AI, with the goal of building, optimizing, and analyzing data for a large-scale chat messaging storage system. The core focus is migrating data (ETL) from Apache Cassandra to ScyllaDB to resolve the Hot Partition problem, setting up a Vietnamese NLP processing pipeline, and building an interactive reporting dashboard.
 
-Dự án được chia làm **6 Giai đoạn (Phases)** tương ứng với lộ trình thực tập.
-
----
-
-## Lộ trình Dự án (6 Phases)
-
-- **Phase 0: Thiết lập Môi trường Phát triển (Environment Setup)**
-  Triển khai hệ thống Big Data cục bộ bằng Docker Compose bao gồm: Apache Cassandra (nguồn), ScyllaDB (đích) và PySpark. Sinh dữ liệu giả lập (Mock Data) tạo ra hiện tượng Hot Partition để thử nghiệm.
-
-- **Phase 1: Phân tích Dữ liệu Khám phá (Data Profiling & EDA)**
-  Truy vấn và đánh giá dữ liệu trên Cassandra. Phát hiện phòng chat `room_999` chiếm đa số lượng tin nhắn, dẫn tới mất cân bằng tải (Hot Partition).
-
-- **Phase 2: Thiết kế Kiến trúc ScyllaDB (ScyllaDB Design)**
-  Thiết kế lại schema CSDL trên ScyllaDB. Chuyển đổi Partition Key từ `room_id` sang `(room_id, bucket_id)` để phân mảnh dữ liệu theo tháng (Time-bucketing), giải quyết dứt điểm vấn đề Hot Partition.
-
-- **Phase 3: Xây dựng Pipeline ETL bằng PySpark (PySpark ETL)**
-  Thiết lập luồng ETL chuyển dữ liệu từ Cassandra sang ScyllaDB. Tối ưu hóa cấu hình Spark I/O (batch size, concurrent writes) và xây dựng Cold Archiver lưu trữ dữ liệu cũ ra định dạng Parquet.
-
-- **Phase 4: Phân tích NLP trên Tin nhắn Chat (NLP Analysis)**
-  Tiền xử lý văn bản tiếng Việt (Text Preprocessing) sử dụng thư viện `underthesea` (tách từ, loại bỏ stopwords, bảo vệ emoticon). Phân tích cảm xúc (Sentiment Analysis) và trực quan hóa WordCloud để tìm ra xu hướng tương tác của người dùng. *(Đang triển khai đến phần Tiền xử lý)*
-
-- **Phase 5: Xây dựng API và Dashboard (Streamlit API)**
-  *(Dự kiến)* Xây dựng API cung cấp dữ liệu bằng FastAPI (có hỗ trợ phân trang) và xây dựng Dashboard báo cáo theo thời gian thực bằng Streamlit hiển thị các chỉ số phân tích NLP.
+The project is divided into **6 Phases** corresponding to the internship roadmap.
 
 ---
 
-## Kiến trúc Hệ thống
+## Project Roadmap (6 Phases)
+
+- **Phase 0: Environment Setup**
+  Deploy a local Big Data infrastructure using Docker Compose, including: Apache Cassandra (source), ScyllaDB (target), and PySpark. Generate synthetic mock data that exhibits the Hot Partition phenomenon for testing.
+
+- **Phase 1: Data Profiling & EDA**
+  Query and evaluate data on Cassandra. Discover that chat room `room_999` accounts for the majority of messages, leading to load imbalance (Hot Partition).
+
+- **Phase 2: ScyllaDB Schema Design**
+  Redesign the database schema on ScyllaDB. Transform the Partition Key from `room_id` to `(room_id, bucket_id)` for monthly time-bucketing, completely resolving the Hot Partition issue.
+
+- **Phase 3: PySpark ETL Pipeline**
+  Build an ETL pipeline to migrate data from Cassandra to ScyllaDB. Optimize Spark I/O configuration (batch size, concurrent writes) and implement a Cold Archiver to store old data in Parquet format.
+
+- **Phase 4: NLP Analysis on Chat Messages**
+  Vietnamese text preprocessing using the `underthesea` library (word segmentation, stopword removal, emoticon preservation). Sentiment analysis with a custom dictionary and WordCloud visualization to identify user interaction trends.
+
+- **Phase 5: API & Dashboard**
+  Build a data-serving API with FastAPI (supporting Backtracking Pagination) and a real-time reporting dashboard with Streamlit displaying NLP analytics, ETL charts, and a Chat Room Explorer.
+
+---
+
+## System Architecture
 
 ```text
-             Dữ liệu Chat (Mock)
+             Chat Data (Mock)
                     │
                     ▼
            Apache Cassandra (Phase 0-1)
                     │
                     ▼
               PySpark ETL (Phase 3)
-       - Xử lý Time Bucketing (bucket_id)
-       - Lưu trữ lạnh (Cold Archiver -> Parquet)
+       - Time Bucketing (bucket_id)
+       - Cold Archiver -> Parquet
                     │
                     ▼
                ScyllaDB (Phase 2)
                     │
                     ▼
-             Phân tích NLP (Phase 4)
-       - Tiền xử lý văn bản (underthesea)
+             NLP Analysis (Phase 4)
+       - Vietnamese Text Preprocessing (underthesea)
        - Sentiment Analysis & WordCloud
                     │
                     ▼
-   FastAPI & Dashboard Streamlit (Phase 5)
+   FastAPI & Streamlit Dashboard (Phase 5)
 ```
 
 ---
 
-## Công nghệ sử dụng
+## Tech Stack
 
-- **Ngôn ngữ & Thư viện:** Python 3.x, Pandas, Matplotlib, WordCloud, underthesea (NLP).
-- **Cơ sở dữ liệu:** Apache Cassandra (v4.1), ScyllaDB (latest).
-- **Xử lý Big Data:** Apache Spark (PySpark 3.4.x).
-- **Hạ tầng & Triển khai:** Docker, Docker Compose.
+- **Languages & Libraries:** Python 3.x, Pandas, Matplotlib, WordCloud, underthesea (NLP).
+- **Databases:** Apache Cassandra (v4.1), ScyllaDB (latest).
+- **Big Data Processing:** Apache Spark (PySpark 3.4.x).
+- **Infrastructure & Deployment:** Docker, Docker Compose.
 - **Backend & Dashboard:** FastAPI, Streamlit.
 
 ---
 
-## Hướng dẫn khởi chạy cục bộ
+## Local Setup Guide
 
-### 1. Khởi động Cụm Docker
+### 1. Start Docker Cluster
 ```bash
 docker compose up -d
 ```
-Xác nhận 3 container: `cassandra_source`, `scylla_target` và `pyspark_workspace` đang chạy.
+Verify that 3 containers are running: `cassandra_source`, `scylla_target`, and `pyspark_workspace`.
 
-### 2. Sinh dữ liệu giả lập (Phase 0)
+### 2. Generate Mock Data (Phase 0)
 ```bash
 docker cp phase_0_setup/generate_mock_data.py pyspark_workspace:/home/jovyan/work/
 docker exec -it pyspark_workspace python /home/jovyan/work/generate_mock_data.py
 ```
 
-### 3. Thiết lập Schema ScyllaDB (Phase 2)
+### 3. Setup ScyllaDB Schema (Phase 2)
 ```bash
-docker cp scripts/test_scylla_conn.py pyspark_workspace:/home/jovyan/work/
-docker exec -it pyspark_workspace python /home/jovyan/work/test_scylla_conn.py
+docker cp phase_2_scylla_design/scylla_ddl_manager.py pyspark_workspace:/home/jovyan/work/
+docker exec -it pyspark_workspace python /home/jovyan/work/scylla_ddl_manager.py
 ```
 
-### 4. Chạy PySpark ETL (Phase 3)
-Chạy script để migrate dữ liệu và tự động gán cột `bucket_id`:
+### 4. Run PySpark ETL (Phase 3)
+Run the migration script to transfer data and automatically assign `bucket_id`:
 ```bash
 docker cp phase_3_pyspark_etl/pyspark_etl_migration.py pyspark_workspace:/home/jovyan/work/
 docker exec -it -e PYTHONPATH="/usr/local/spark/python:/usr/local/spark/python/lib/py4j-0.10.9.7-src.zip" pyspark_workspace python /home/jovyan/work/pyspark_etl_migration.py
 ```
 
+### 5. Run NLP Analysis (Phase 4)
+```bash
+python3 phase_4_nlp_analysis/nlp_analytics_pipeline.py
+```
+> If ScyllaDB is not available, run offline: `python3 phase_4_nlp_analysis/nlp_analytics_pipeline.py --offline`
+
+### 6. Launch API & Dashboard (Phase 5)
+**Terminal 1 — FastAPI Backend:**
+```bash
+uvicorn phase_5_dashboard.api:app --reload --host 0.0.0.0 --port 8000
+```
+**Terminal 2 — Streamlit Dashboard:**
+```bash
+streamlit run phase_5_dashboard/app.py
+```
+- Swagger UI: http://localhost:8000/docs
+- Dashboard: http://localhost:8501
+
 ---
 
-## Troubleshooting (Lỗi thường gặp)
+## Troubleshooting
 
-1. **Lỗi `ModuleNotFoundError: No module named 'pyspark'`**
-   - Cần export biến `PYTHONPATH` khi chạy script `.py` trực tiếp trong container Jupyter (như lệnh ở Bước 4).
+1. **`ModuleNotFoundError: No module named 'pyspark'`**
+   - Export the `PYTHONPATH` variable when running `.py` scripts directly inside the Jupyter container (as shown in Step 4).
 
-2. **Lỗi `SimpleStrategy doesn't support tablet replication` khi tạo Keyspace ở ScyllaDB**
-   - Chuyển sang sử dụng `NetworkTopologyStrategy` kết hợp datacenter `'datacenter1'` thay cho `SimpleStrategy`.
+2. **`SimpleStrategy doesn't support tablet replication` when creating Keyspace on ScyllaDB**
+   - Switch to `NetworkTopologyStrategy` with datacenter `'datacenter1'` instead of `SimpleStrategy`.

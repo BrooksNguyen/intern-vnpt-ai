@@ -1,6 +1,6 @@
 """
-Script sinh biểu đồ EDA từ dữ liệu thật trong ScyllaDB.
-Kết nối trực tiếp database, query, rồi vẽ chart.
+EDA Chart Generator — Generates charts from real ScyllaDB data.
+Connects directly to the database, queries data, and produces visualization charts.
 """
 import os
 import sys
@@ -57,9 +57,9 @@ rooms, counts = zip(*top_rooms)
 fig, ax = plt.subplots(figsize=(10, 6))
 colors = ['#e74c3c' if c == max(counts) else '#3498db' for c in counts]
 bars = ax.bar(rooms, counts, color=colors, edgecolor='white')
-ax.set_title('Top 10 Room theo so luong tin nhan', fontsize=14, fontweight='bold')
+ax.set_title('Top 10 Rooms by Message Count', fontsize=14, fontweight='bold')
 ax.set_xlabel('Room ID')
-ax.set_ylabel('So luong tin nhan')
+ax.set_ylabel('Message Count')
 ax.set_yscale('log')
 for bar, count in zip(bars, counts):
     ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() * 1.1, f'{count:,}', ha='center', fontsize=9)
@@ -80,7 +80,7 @@ colors_pie = ['#3498db', '#2ecc71', '#e67e22', '#9b59b6']
 
 fig, ax = plt.subplots(figsize=(8, 6))
 ax.pie(sizes, labels=pct_labels, colors=colors_pie[:len(labels)], startangle=90, autopct='%1.1f%%')
-ax.set_title('Phan phoi thiet bi', fontsize=14, fontweight='bold')
+ax.set_title('Device Distribution', fontsize=14, fontweight='bold')
 plt.tight_layout()
 plt.savefig(f'{OUTPUT_DIR}/device_distribution.png', dpi=150)
 logging.info(f"Saved: {OUTPUT_DIR}/device_distribution.png")
@@ -97,9 +97,9 @@ hour_counts = [hour_counter.get(h, 0) for h in hours]
 
 fig, ax = plt.subplots(figsize=(12, 5))
 ax.bar(hours, hour_counts, color='#3498db', edgecolor='white')
-ax.set_title('Phan phoi tin nhan theo gio', fontsize=14, fontweight='bold')
-ax.set_xlabel('Gio trong ngay')
-ax.set_ylabel('So luong tin nhan')
+ax.set_title('Message Distribution by Hour of Day', fontsize=14, fontweight='bold')
+ax.set_xlabel('Hour of Day')
+ax.set_ylabel('Message Count')
 ax.set_xticks(hours)
 ax.set_xticklabels([f'{h}h' for h in hours])
 plt.grid(axis='y', linestyle='--', alpha=0.4)
@@ -116,9 +116,9 @@ type_colors = ['#2ecc71', '#e67e22', '#9b59b6', '#1abc9c']
 
 fig, ax = plt.subplots(figsize=(8, 5))
 ax.bar(types, type_counts, color=type_colors[:len(types)], edgecolor='white')
-ax.set_title('Phan phoi loai tin nhan (msg_type)', fontsize=14, fontweight='bold')
-ax.set_xlabel('Loai tin nhan')
-ax.set_ylabel('So luong')
+ax.set_title('Message Type Distribution (msg_type)', fontsize=14, fontweight='bold')
+ax.set_xlabel('Message Type')
+ax.set_ylabel('Count')
 for i, (t, c) in enumerate(zip(types, type_counts)):
     ax.text(i, c + max(type_counts)*0.01, f'{c:,}', ha='center', fontsize=11)
 plt.grid(axis='y', linestyle='--', alpha=0.4)
@@ -139,9 +139,9 @@ if bucket_counter:
 
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.bar(bucket_labels, bucket_counts, color='#2ecc71', edgecolor='white')
-    ax.set_title('room_999: phan phoi tin nhan theo bucket_id (time-bucketing)', fontsize=13, fontweight='bold')
-    ax.set_xlabel('bucket_id (yyyy-MM)')
-    ax.set_ylabel('So luong tin nhan')
+    ax.set_title('room_999: Message Distribution by bucket_id (Time-Bucketing)', fontsize=13, fontweight='bold')
+    ax.set_xlabel('bucket_id (YYYY-MM)')
+    ax.set_ylabel('Message Count')
     for i, (b, c) in enumerate(zip(bucket_labels, bucket_counts)):
         ax.text(i, c + max(bucket_counts)*0.01, f'{c:,}', ha='center', fontsize=9)
     plt.xticks(rotation=45, ha='right')
@@ -165,8 +165,8 @@ width = 0.35
 bars1 = ax.bar(x - width/2, default_vals, width, label='Default', color='#95a5a6', edgecolor='white')
 bars2 = ax.bar(x + width/2, optimized_vals, width, label='Optimized', color='#2ecc71', edgecolor='white')
 
-ax.set_title('So sanh cau hinh Spark: Default vs Optimized', fontsize=13, fontweight='bold')
-ax.set_ylabel('Gia tri')
+ax.set_title('Spark Config Comparison: Default vs Optimized', fontsize=13, fontweight='bold')
+ax.set_ylabel('Value')
 ax.set_xticks(x)
 ax.set_xticklabels(params, fontsize=10)
 ax.set_yscale('log')
@@ -183,15 +183,15 @@ plt.savefig(f'{OUTPUT_DIR}/spark_optimization.png', dpi=150)
 logging.info(f"Saved: {OUTPUT_DIR}/spark_optimization.png")
 plt.close()
 
-# --- 7. User activity heatmap (top 15 users) ---
+# --- 7. User activity (top 15 users) ---
 user_counter = Counter(r.user_id for r in rows)
 top_users = user_counter.most_common(15)
 u_names, u_counts = zip(*top_users)
 
 fig, ax = plt.subplots(figsize=(10, 5))
 ax.barh(u_names[::-1], u_counts[::-1], color='#e67e22', edgecolor='white')
-ax.set_title('Top 15 user hoat dong nhieu nhat', fontsize=13, fontweight='bold')
-ax.set_xlabel('So luong tin nhan')
+ax.set_title('Top 15 Most Active Users', fontsize=13, fontweight='bold')
+ax.set_xlabel('Message Count')
 for i, c in enumerate(u_counts[::-1]):
     ax.text(c + max(u_counts)*0.01, i, f'{c:,}', va='center', fontsize=9)
 plt.grid(axis='x', linestyle='--', alpha=0.4)
@@ -208,23 +208,23 @@ if cass_session:
     not_edited = len(cass_rows) - edited
 
     fig, ax = plt.subplots(figsize=(6, 6))
-    ax.pie([not_edited, edited], labels=[f'Chua chinh sua ({not_edited:,})', f'Da chinh sua ({edited:,})'],
+    ax.pie([not_edited, edited], labels=[f'Not Edited ({not_edited:,})', f'Edited ({edited:,})'],
            colors=['#3498db', '#e74c3c'], autopct='%1.1f%%', startangle=90)
-    ax.set_title('Ti le tin nhan da chinh sua (is_edited)', fontsize=13, fontweight='bold')
+    ax.set_title('Edited Message Ratio (is_edited)', fontsize=13, fontweight='bold')
     plt.tight_layout()
     plt.savefig(f'{OUTPUT_DIR}/edited_ratio.png', dpi=150)
     logging.info(f"Saved: {OUTPUT_DIR}/edited_ratio.png")
     plt.close()
 
 # --- Print summary ---
-print(f"\nTONG KET DU LIEU THUC:")
-print(f"  Tong so ban ghi: {len(rows):,}")
-print(f"  So room: {len(room_counter)}")
-print(f"  Room lon nhat: {top_rooms[0][0]} ({top_rooms[0][1]:,} msgs)")
-print(f"  Thiet bi: {dict(device_counter)}")
-print(f"  Loai tin nhan: {dict(type_counter)}")
-print(f"  Buckets room_999: {len(bucket_counter)}")
-print(f"  Top 5 user: {top_users[:5]}")
+print(f"\nDATA SUMMARY:")
+print(f"  Total records: {len(rows):,}")
+print(f"  Total rooms: {len(room_counter)}")
+print(f"  Largest room: {top_rooms[0][0]} ({top_rooms[0][1]:,} msgs)")
+print(f"  Devices: {dict(device_counter)}")
+print(f"  Message types: {dict(type_counter)}")
+print(f"  Buckets in room_999: {len(bucket_counter)}")
+print(f"  Top 5 users: {top_users[:5]}")
 
 # --- Cleanup ---
 if cass_cluster:

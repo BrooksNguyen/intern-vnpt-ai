@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS chat_table (
 ) WITH CLUSTERING ORDER BY (message_id DESC);
 
 
--- ScyllaDB (target) - composite PK tránh hot partition
+-- ScyllaDB (target) - composite PK to prevent hot partition
 CREATE KEYSPACE IF NOT EXISTS chat_system_target
 WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
 

@@ -1,70 +1,70 @@
-# 🚀 Hướng dẫn Khởi chạy Hệ thống (Run Instructions)
+# 🚀 System Run Instructions
 
-Tài liệu này cung cấp các bước chi tiết để khởi chạy toàn bộ hệ thống Big Data và Dashboard (từ Phase 0 đến Phase 5) trên môi trường Local.
+This document provides detailed steps to launch the entire Big Data system and Dashboard (from Phase 0 to Phase 5) in a local environment.
 
-## 🛠️ 1. Yêu cầu Hệ thống (Prerequisites)
-- Đã cài đặt **Docker** và **Docker Compose**.
-- Cài đặt **Python 3.9+**.
-- Cài đặt các thư viện Python cần thiết:
+## 🛠️ 1. Prerequisites
+- **Docker** and **Docker Compose** installed.
+- **Python 3.9+** installed.
+- Required Python libraries installed:
   ```bash
   pip install -r requirements.txt
   ```
 
 ---
 
-## 🏗️ 2. Khởi chạy Cụm Database & Spark (Docker)
-Cụm hệ thống sử dụng Docker để chạy Cassandra (Nguồn), ScyllaDB (Đích) và Apache Spark.
-Tại thư mục gốc của dự án, mở Terminal và chạy lệnh:
+## 🏗️ 2. Launch Database & Spark Cluster (Docker)
+The system cluster uses Docker to run Cassandra (Source), ScyllaDB (Target), and Apache Spark.
+From the project root directory, open a Terminal and run:
 ```bash
 docker compose up -d
 ```
-Đợi khoảng 30-60 giây để các Container khởi động hoàn tất. Bạn có thể kiểm tra trạng thái bằng lệnh `docker ps` (đảm bảo 3 container `cassandra_source`, `scylla_target` và `pyspark_workspace` đang ở trạng thái **Up**).
+Wait approximately 30-60 seconds for the containers to fully start. You can check the status using the `docker ps` command (ensure that the 3 containers `cassandra_source`, `scylla_target`, and `pyspark_workspace` are in the **Up** state).
 
 ---
 
-## ⚡ 3. Chạy Toàn bộ Pipeline Bằng 1-Click (Phase 0 ➔ 4)
-Để đơn giản hóa, dự án đã cung cấp một shell script chạy toàn bộ luồng ETL và Phân tích NLP một cách hoàn toàn tự động.
+## ⚡ 3. Run the Entire Pipeline via 1-Click (Phase 0 ➔ 4)
+For simplicity, the project provides a shell script that fully automates the entire ETL flow and NLP Analysis.
 
-Chạy lệnh sau trên Terminal của máy host:
+Run the following command on your host Terminal:
 ```bash
 bash run_pipeline.sh
 ```
 
-**Script này sẽ tự động thực hiện các bước:**
-1. **Sinh dữ liệu mẫu:** Tạo dữ liệu chat giả lập và đẩy vào Cassandra (Phase 0).
-2. **Khởi tạo Database:** Tạo Keyspace và Table (Time-bucketing) trên ScyllaDB (Phase 2).
-3. **Thực thi PySpark ETL:** Di dời, biến đổi dữ liệu (tính toán `bucket_id`) và ghi song song từ Cassandra sang ScyllaDB qua container Spark (Phase 3).
-4. **Sinh Biểu đồ EDA:** Trực quan hoá dữ liệu sau di dời (Phase 1 & 3).
-5. **Chạy Phân tích NLP:** Tiền xử lý văn bản, sinh Keyword, WordCloud và biểu đồ cảm xúc (Phase 4).
+**This script automatically performs these steps:**
+1. **Mock Data Generation:** Generates synthetic chat data and pushes it to Cassandra (Phase 0).
+2. **Database Initialization:** Creates the Keyspace and Table (with Time-bucketing) on ScyllaDB (Phase 2).
+3. **PySpark ETL Execution:** Migrates, transforms (calculating `bucket_id`), and parallel writes data from Cassandra to ScyllaDB via the Spark container (Phase 3).
+4. **EDA Chart Generation:** Visualizes post-migration data (Phases 1 & 3).
+5. **NLP Analysis Execution:** Preprocesses text, generates Keywords, WordCloud, and sentiment charts (Phase 4).
 
-> **Lưu ý:** Nếu bạn không muốn bật Docker (hoặc máy yếu), bạn có thể chạy test độc lập tính năng NLP bằng Mock Data qua lệnh: `python3 phase_4_nlp_analysis/nlp_analytics_pipeline.py --offline`
+> **Note:** If you prefer not to start Docker (or have limited hardware resources), you can independently test the NLP feature using Mock Data via this command: `python3 phase_4_nlp_analysis/nlp_analytics_pipeline.py --offline`
 
 ---
 
-## 🖥️ 4. Khởi chạy Backend API & Dashboard (Phase 5)
+## 🖥️ 4. Launch Backend API & Dashboard (Phase 5)
 
-Sau khi dữ liệu đã được lưu trữ an toàn trong ScyllaDB, bạn có thể khởi chạy giao diện và API.
-Bạn cần mở **2 Tab Terminal** mới.
+Once the data is safely stored in ScyllaDB, you can launch the API and UI.
+You need to open **2 new Terminal Tabs**.
 
-### Terminal 1: Chạy FastAPI Backend
-Backend API đóng vai trò truy vấn dữ liệu từ ScyllaDB và hỗ trợ phân trang (Backtracking Pagination).
+### Terminal 1: Run FastAPI Backend
+The Backend API queries data from ScyllaDB and supports Backtracking Pagination.
 ```bash
 uvicorn phase_5_dashboard.api:app --reload --host 0.0.0.0 --port 8000
 ```
-- Truy cập tài liệu API tự sinh (Swagger UI): **http://localhost:8000/docs**
+- Access auto-generated API documentation (Swagger UI): **http://localhost:8000/docs**
 
-### Terminal 2: Chạy Streamlit Dashboard
-Giao diện Web tương tác hiển thị mọi biểu đồ NLP, thông tin cấu trúc cơ sở dữ liệu và công cụ kiểm thử Chat API.
+### Terminal 2: Run Streamlit Dashboard
+An interactive Web UI displaying NLP charts, database schema information, and Chat API testing tools.
 ```bash
 streamlit run phase_5_dashboard/app.py
 ```
-- Trình duyệt sẽ tự động mở giao diện Dashboard tại: **http://localhost:8501**
+- Your browser will automatically open the Dashboard at: **http://localhost:8501**
 
 ---
 
-## 🛑 5. Dọn dẹp và Tắt Hệ thống
-Sau khi hoàn thành công việc, để tắt hệ thống và giải phóng tài nguyên RAM/CPU, chạy lệnh:
+## 🛑 5. Cleanup and Teardown
+When finished, to shut down the system and free up RAM/CPU resources, run:
 ```bash
 docker compose down
 ```
-*(Nếu muốn xóa sạch toàn bộ dữ liệu database để làm lại từ đầu, hãy chạy lệnh `docker compose down -v` để xóa cả Docker Volumes).*
+*(If you want to wipe all database data to start fresh, run `docker compose down -v` to delete the Docker Volumes as well).*
