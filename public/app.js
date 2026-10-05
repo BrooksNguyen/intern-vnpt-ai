@@ -162,24 +162,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function loadMessages(isBackground = false) {
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    let currentPagingState = null;
+
+    async function loadMessages(isBackground = false, isLoadMore = false) {
         const roomId = roomSelect.value;
         if (!roomId) return;
 
         if (!isBackground) {
-            loadBtn.innerText = 'Loading...';
-            loadBtn.disabled = true;
-            chatContainer.style.opacity = '0.5';
+            if (isLoadMore) {
+                loadMoreBtn.innerText = 'Loading...';
+                loadMoreBtn.disabled = true;
+            } else {
+                loadBtn.innerText = 'Loading...';
+                loadBtn.disabled = true;
+                chatContainer.style.opacity = '0.5';
+                currentPagingState = null;
+            }
+        }
+
+        let url = `${API_BASE}/messages?room_id=${roomId}&limit=50`;
+        if (isLoadMore && currentPagingState) {
+            url += `&state=${encodeURIComponent(currentPagingState)}`;
         }
 
         try {
-            const res = await fetch(`${API_BASE}/messages?room_id=${roomId}&limit=50`);
+            const res = await fetch(url);
             const data = await res.json();
             
-            // Check if user has scrolled up; if so, don't auto-scroll to top unless it's a new manual load
+            // Check if user has scrolled up
             const isScrolled = chatContainer.scrollTop > 50;
 
-            chatContainer.innerHTML = ''; 
+            if (!isLoadMore) {
+                chatContainer.innerHTML = ''; 
+            }
             chatContainer.style.opacity = '1';
 
             if (data.data && data.data.length > 0) {
@@ -201,31 +217,50 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                     chatContainer.appendChild(msgDiv);
                 });
-                if (!isBackground || !isScrolled) {
+                
+                if (!isBackground && !isLoadMore && !isScrolled) {
                     chatContainer.scrollTop = 0;
                 }
+                
+                currentPagingState = data.paging_state;
+                if (currentPagingState && !isBackground) {
+                    loadMoreBtn.style.display = 'inline-block';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                }
+
             } else {
-                chatContainer.innerHTML = `<div class="empty-state"><p>No messages found in this room.</p></div>`;
+                if (!isLoadMore) {
+                    chatContainer.innerHTML = `<div class="empty-state"><p>No messages found in this room.</p></div>`;
+                }
+                loadMoreBtn.style.display = 'none';
             }
 
         } catch (error) {
             if (!isBackground) {
                 chatContainer.style.opacity = '1';
-                chatContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>API Connection Failed.</p></div>`;
+                if (!isLoadMore) {
+                    chatContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>API Connection Failed.</p></div>`;
+                }
             }
         } finally {
             if (!isBackground) {
                 loadBtn.innerText = 'Explore Messages';
                 loadBtn.disabled = false;
+                loadMoreBtn.innerText = 'Load More Messages';
+                loadMoreBtn.disabled = false;
             }
         }
     }
 
-    loadBtn.addEventListener('click', () => loadMessages(false));
+    loadBtn.addEventListener('click', () => loadMessages(false, false));
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => loadMessages(false, true));
+    }
     roomSelect.addEventListener('change', () => {
         if (roomSelect.value) {
             loadBtn.disabled = false;
-            loadMessages(false); // Auto-load on select change
+            loadMessages(false, false); // Auto-load on select change
         }
     });
     
