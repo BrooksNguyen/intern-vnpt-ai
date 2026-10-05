@@ -5,15 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VNPT-AI | Data Pipeline Project</title>
     
-    <!-- Meta configurations -->
     <meta name="theme-color" content="#ffffff">
     <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/VNPT_Logo.svg/120px-VNPT_Logo.svg.png">
-    
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -23,7 +19,7 @@
         <div class="nav-container">
             <div class="nav-brand" id="nav-home">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/VNPT_Logo.svg/120px-VNPT_Logo.svg.png" alt="VNPT Logo">
-                <span class="brand-text">Data Pipeline Project</span>
+                <span class="brand-text">DATA PIPELINE</span>
             </div>
             <div class="nav-links">
                 <a href="https://github.com/BrooksNguyen/intern-vnpt-ai" target="_blank" class="github-link">
@@ -66,42 +62,73 @@
                 </div>
             </section>
 
-            <!-- Process & Roadmap -->
+            <!-- Process & Roadmap (Stepped Timeline) -->
             <section class="section bg-light">
                 <div class="section-header">
                     <h2>Project Roadmap</h2>
-                    <p>The 6-phase journey of the internship project.</p>
+                    <p>The step-by-step journey of the internship project.</p>
                 </div>
-                <div class="roadmap-grid">
-                    <div class="step-card">
-                        <div class="step-num">0</div>
-                        <h4>Environment Setup</h4>
-                        <p>Docker Compose initialization and Mock Data generation.</p>
-                    </div>
-                    <div class="step-card">
-                        <div class="step-num">1</div>
-                        <h4>Data Profiling</h4>
-                        <p>Identifying the "Hot Partition" bottleneck using PySpark EDA.</p>
-                    </div>
-                    <div class="step-card">
-                        <div class="step-num">2</div>
-                        <h4>ScyllaDB Redesign</h4>
-                        <p>Applying Time-Bucketing Composite Primary Keys and TWCS.</p>
-                    </div>
-                    <div class="step-card">
-                        <div class="step-num">3</div>
-                        <h4>PySpark ETL</h4>
-                        <p>Migrating data in parallel and archiving cold records to Parquet.</p>
-                    </div>
-                    <div class="step-card">
-                        <div class="step-num">4</div>
-                        <h4>NLP Analysis</h4>
-                        <p>Sentiment classification and WordCloud generation for text data.</p>
-                    </div>
-                    <div class="step-card highlight-step">
-                        <div class="step-num">5</div>
-                        <h4>API & Dashboard</h4>
-                        <p>Serving data via FastAPI with Backtracking Pagination.</p>
+                
+                <div class="timeline-wrapper">
+                    <div class="timeline-container">
+                        <!-- Step 0 (Bottom) -->
+                        <div class="timeline-item bottom">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <h4>PHASE 0</h4>
+                                <p>Environment Setup & Mock Data</p>
+                            </div>
+                            <div class="line-connector up-right"></div>
+                        </div>
+
+                        <!-- Step 1 (Top) -->
+                        <div class="timeline-item top">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <h4>PHASE 1</h4>
+                                <p>Profiling & EDA Analysis</p>
+                            </div>
+                            <div class="line-connector down-right"></div>
+                        </div>
+
+                        <!-- Step 2 (Bottom) -->
+                        <div class="timeline-item bottom">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <h4>PHASE 2</h4>
+                                <p>ScyllaDB Redesign</p>
+                            </div>
+                            <div class="line-connector up-right"></div>
+                        </div>
+
+                        <!-- Step 3 (Top) -->
+                        <div class="timeline-item top">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <h4>PHASE 3</h4>
+                                <p>PySpark ETL Migration</p>
+                            </div>
+                            <div class="line-connector down-right"></div>
+                        </div>
+                        
+                        <!-- Step 4 (Bottom) -->
+                        <div class="timeline-item bottom">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <h4>PHASE 4</h4>
+                                <p>NLP Analysis</p>
+                            </div>
+                            <div class="line-connector up-right"></div>
+                        </div>
+
+                        <!-- Step 5 (Top) -->
+                        <div class="timeline-item top">
+                            <div class="timeline-point highlight"></div>
+                            <div class="timeline-content">
+                                <h4 style="color: var(--vnpt-blue-main)">PHASE 5</h4>
+                                <p>API & Interactive Dashboard</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -158,10 +185,8 @@
                 </div>
             </div>
 
-            <!-- NLP Analytics Section -->
             <section class="dashboard-section">
                 <div class="section-title">🧠 NLP Analytics & Statistics</div>
-                
                 <div class="metrics-row">
                     <div class="metric-card">
                         <div class="metric-label">Total Analyzed Rooms</div>
@@ -189,10 +214,8 @@
                 </div>
             </section>
 
-            <!-- Chat Explorer Section -->
             <section class="dashboard-section">
                 <div class="section-title">💬 Chat Room Explorer</div>
-                
                 <div class="explorer-card">
                     <div class="search-controls">
                         <select id="room-select" class="form-select">

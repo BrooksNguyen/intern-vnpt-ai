@@ -24,34 +24,38 @@ class ChatBackendService:
         self.port = port
         self.cluster = None
         self.session = None
+        self.is_mock = False
 
     def connect(self):
-        """Connect to ScyllaDB cluster."""
+        """Connect to ScyllaDB cluster or fallback to mock mode."""
         logging.info(f"Connecting to ScyllaDB at {self.host}:{self.port}...")
         try:
-            self.cluster = Cluster([self.host], port=self.port)
+            self.cluster = Cluster([self.host], port=self.port, connect_timeout=3)
             self.session = self.cluster.connect('chat_system_target')
+            self.is_mock = False
             logging.info("Connected to ScyllaDB successfully.")
         except Exception as e:
-            logging.error(f"Connection failed: {e}")
-            sys.exit(1)
+            logging.warning(f"Connection failed: {e}. Falling back to MOCK mode for Vercel.")
+            self.is_mock = True
 
     def close(self):
         """Close connection safely."""
-        if self.cluster:
+        if self.cluster and not self.is_mock:
             self.cluster.shutdown()
             logging.info("Connection closed.")
 
     def query_bucket(self, room_id: str, bucket_id: str, limit: int = 50) -> list[dict]:
         """
         Query messages from a specific bucket.
-        Args:
-            room_id: Chat room ID
-            bucket_id: Month bucket (format 'YYYY-MM')
-            limit: Maximum number of messages
-        Returns:
-            list[dict]: List of messages
         """
+        if self.is_mock:
+            return [{
+                "room_id": room_id, "bucket_id": bucket_id, "message_id": "mock-uuid-1234",
+                "user_id": "MockUser", "content": f"Mock data for {room_id} (ScyllaDB unreachable on Vercel).",
+                "msg_type": "text", "device": "web", "is_edited": False,
+                "timestamp": datetime.now()
+            }] * min(limit, 5)
+
         query = """
             SELECT room_id, bucket_id, message_id, user_id, content,
                    msg_type, device, is_edited, timestamp
@@ -116,6 +120,9 @@ class ChatBackendService:
 
     def get_available_rooms(self) -> list[str]:
         """Get list of available room_ids in the system."""
+        if self.is_mock:
+            return ["room_1", "room_42", "room_99", "room_100", "room_999"]
+            
         rows = self.session.execute(
             "SELECT DISTINCT room_id FROM chat_table_bucketed;"
         )
@@ -124,6 +131,9 @@ class ChatBackendService:
 
     def get_room_stats(self) -> list[dict]:
         """Get statistics of message count per room."""
+        if self.is_mock:
+            return [{"room_id": f"room_{i}", "message_count": 5000} for i in range(150)]
+            
         rows = self.session.execute(
             "SELECT room_id, bucket_id FROM chat_table_bucketed;"
         )
