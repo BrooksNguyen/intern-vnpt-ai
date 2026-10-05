@@ -326,8 +326,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="background: rgba(255, 59, 48, 0.1); border: 1px solid #FF3B30; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: flex-start;">
                     <svg viewBox="0 0 24 24" width="24" height="24" stroke="#FF3B30" stroke-width="2" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                     <div>
-                        <strong style="color: #FF3B30; display: block; margin-bottom: 0.25rem;">Mock Data Triggered (Kaggle Auth Missing)</strong>
-                        <p style="color: #666; font-size: 0.9rem; margin: 0;">To analyze real datasets, you must provide your <code style="background:#eee;padding:2px 4px;border-radius:4px;">KAGGLE_USERNAME</code> and <code style="background:#eee;padding:2px 4px;border-radius:4px;">KAGGLE_KEY</code> as Environment Variables in your Render Dashboard.</p>
+                        <strong style="color: #FF3B30; display: block; margin-bottom: 0.25rem;">Mock Data Triggered (API Auth Missing)</strong>
+                        <p style="color: #666; font-size: 0.9rem; margin: 0;">The server is currently missing its Kaggle API credentials. To unlock real data analysis, the site administrator must configure the Kaggle API tokens on the backend server.</p>
                     </div>
                 </div>
             ` : '';
