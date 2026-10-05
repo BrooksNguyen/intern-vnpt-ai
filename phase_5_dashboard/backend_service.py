@@ -49,12 +49,27 @@ class ChatBackendService:
         Query messages from a specific bucket.
         """
         if self.is_mock:
-            return [{
-                "room_id": room_id, "bucket_id": bucket_id, "message_id": "mock-uuid-1234",
-                "user_id": "MockUser", "content": f"Mock data for {room_id} (ScyllaDB unreachable on Vercel).",
-                "msg_type": "text", "device": "web", "is_edited": False,
-                "timestamp": datetime.now()
-            }] * min(limit, 5)
+            import random
+            now = datetime.now()
+            # Generate a dynamically updating stream based on current seconds
+            count = (int(now.timestamp()) % 15) + 5 
+            mock_msgs = []
+            for i in range(count):
+                msg_time = datetime.fromtimestamp(now.timestamp() - (count - i) * 3)
+                mock_msgs.append({
+                    "room_id": room_id, "bucket_id": bucket_id, "message_id": f"mock-{i}",
+                    "user_id": random.choice(["System", "Admin", "User_A", "User_B", "Guest"]), 
+                    "content": random.choice([
+                        f"Status check at {msg_time.strftime('%H:%M:%S')}", 
+                        "Data pipeline is running smoothly.",
+                        "Analyzing new NLP models...",
+                        "ScyllaDB connection timeout simulated.",
+                        "Live Sync is active."
+                    ]),
+                    "msg_type": "text", "device": "web", "is_edited": False,
+                    "timestamp": msg_time
+                })
+            return mock_msgs
 
         query = """
             SELECT room_id, bucket_id, message_id, user_id, content,
@@ -132,7 +147,10 @@ class ChatBackendService:
     def get_room_stats(self) -> list[dict]:
         """Get statistics of message count per room."""
         if self.is_mock:
-            return [{"room_id": f"room_{i}", "message_count": 5000} for i in range(150)]
+            # Add a slight dynamic increment to simulate live traffic
+            import time
+            traffic = int(time.time() % 1000)
+            return [{"room_id": f"room_{i}", "message_count": 5000 + traffic} for i in range(150)]
             
         rows = self.session.execute(
             "SELECT room_id, bucket_id FROM chat_table_bucketed;"

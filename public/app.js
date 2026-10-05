@@ -52,6 +52,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const roomSelect = document.getElementById('room-select');
     const loadBtn = document.getElementById('load-btn');
     const chatContainer = document.getElementById('chat-container');
+    
+    let pollInterval = null;
+    let isPolling = false;
+    
+    // Add real-time toggle UI
+    const searchControls = document.querySelector('.search-controls');
+    if (searchControls) {
+        const toggleHtml = `
+            <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.9rem; color:#666; cursor:pointer; margin-left:1rem;">
+                <input type="checkbox" id="realtime-toggle" checked style="accent-color:#005baa; width:16px; height:16px;">
+                Live Sync
+            </label>
+        `;
+        searchControls.insertAdjacentHTML('beforeend', toggleHtml);
+    }
 
     function animateValue(obj, start, end, duration) {
         let startTimestamp = null;
@@ -65,8 +80,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function initDashboard() {
-        fetchStats();
-        fetchRooms();
+        await fetchStats();
+        await fetchRooms();
+        
+        // Setup Real-Time Polling
+        if (!pollInterval) {
+            pollInterval = setInterval(async () => {
+                const rtToggle = document.getElementById('realtime-toggle');
+                if (rtToggle && rtToggle.checked) {
+                    await fetchStats(false); // background fetch
+                    if (roomSelect.value) {
+                        await loadMessages(true); // background fetch
+                    }
+                }
+            }, 3000);
+        }
     }
 
     async function fetchRooms() {
@@ -97,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function fetchStats() {
+    async function fetchStats(animate = true) {
         try {
             const healthRes = await fetch(`${API_BASE}/health`);
             const healthData = await healthRes.json();
@@ -105,14 +133,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (healthData.status === 'healthy') {
                 statusBadge.classList.add('healthy');
                 statusBadge.classList.remove('error');
-                statusText.innerText = 'API Connected';
+                statusText.innerText = 'API Connected (Live)';
             } else throw new Error('Unhealthy');
 
             const statsRes = await fetch(`${API_BASE}/stats`);
             const statsData = await statsRes.json();
             
-            animateValue(roomsVal, 0, statsData.total_rooms || 0, 1000);
-            animateValue(msgsVal, 0, statsData.total_messages || 0, 1500);
+            if (animate) {
+                animateValue(roomsVal, 0, statsData.total_rooms || 0, 1000);
+                animateValue(msgsVal, 0, statsData.total_messages || 0, 1500);
+            } else {
+                roomsVal.innerHTML = (statsData.total_rooms || 0).toLocaleString();
+                msgsVal.innerHTML = (statsData.total_messages || 0).toLocaleString();
+            }
 
         } catch (error) {
             statusBadge.classList.add('error');
@@ -125,21 +158,26 @@ document.addEventListener('DOMContentLoaded', () => {
     function formatDate(dateString) {
         if (!dateString) return 'N/A';
         return new Date(dateString).toLocaleDateString('en-US', { 
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
         });
     }
 
-    async function loadMessages() {
+    async function loadMessages(isBackground = false) {
         const roomId = roomSelect.value;
         if (!roomId) return;
 
-        loadBtn.innerText = 'Loading...';
-        loadBtn.disabled = true;
-        chatContainer.style.opacity = '0.5';
+        if (!isBackground) {
+            loadBtn.innerText = 'Loading...';
+            loadBtn.disabled = true;
+            chatContainer.style.opacity = '0.5';
+        }
 
         try {
             const res = await fetch(`${API_BASE}/messages?room_id=${roomId}&limit=50`);
             const data = await res.json();
+            
+            // Check if user has scrolled up; if so, don't auto-scroll to top unless it's a new manual load
+            const isScrolled = chatContainer.scrollTop > 50;
 
             chatContainer.innerHTML = ''; 
             chatContainer.style.opacity = '1';
@@ -149,9 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const msgDiv = document.createElement('div');
                     msgDiv.className = 'message';
                     
-                    // Small fade-in animation
-                    msgDiv.style.opacity = '0';
-                    msgDiv.style.animation = `fade-in 0.4s ease forwards ${index * 0.03}s`;
+                    if (!isBackground) {
+                        msgDiv.style.opacity = '0';
+                        msgDiv.style.animation = `fade-in 0.3s ease forwards ${index * 0.02}s`;
+                    }
                     
                     msgDiv.innerHTML = `
                         <div class="message-header">
@@ -162,24 +201,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                     chatContainer.appendChild(msgDiv);
                 });
-                chatContainer.scrollTop = 0;
+                if (!isBackground || !isScrolled) {
+                    chatContainer.scrollTop = 0;
+                }
             } else {
                 chatContainer.innerHTML = `<div class="empty-state"><p>No messages found in this room.</p></div>`;
             }
 
         } catch (error) {
-            chatContainer.style.opacity = '1';
-            chatContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>API Connection Failed. Please ensure the backend is running.</p></div>`;
+            if (!isBackground) {
+                chatContainer.style.opacity = '1';
+                chatContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>API Connection Failed.</p></div>`;
+            }
         } finally {
-            loadBtn.innerText = 'Explore Messages';
-            loadBtn.disabled = false;
+            if (!isBackground) {
+                loadBtn.innerText = 'Explore Messages';
+                loadBtn.disabled = false;
+            }
         }
     }
 
-    loadBtn.addEventListener('click', loadMessages);
+    loadBtn.addEventListener('click', () => loadMessages(false));
     roomSelect.addEventListener('change', () => {
         if (roomSelect.value) {
             loadBtn.disabled = false;
+            loadMessages(false); // Auto-load on select change
         }
     });
     
