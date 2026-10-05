@@ -23,9 +23,12 @@ def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
         if os.environ.get('VERCEL'):
             raise ValueError("Bypassing Kaggle download on Vercel to prevent SIGKILL timeouts.")
 
-        # Check for credentials
-        if not os.environ.get('KAGGLE_USERNAME') or not os.environ.get('KAGGLE_KEY'):
-            raise ValueError("Missing credentials")
+        # Check for credentials (support both legacy Username/Key and new API Token)
+        has_legacy = os.environ.get('KAGGLE_USERNAME') and os.environ.get('KAGGLE_KEY')
+        has_new_token = os.environ.get('KAGGLE_API_TOKEN')
+        
+        if not (has_legacy or has_new_token):
+            raise ValueError("Missing credentials. Please set KAGGLE_API_TOKEN in the environment.")
 
         if not kaggle:
             raise ValueError("Kaggle not loaded")
