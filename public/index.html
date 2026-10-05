@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-    <title>VNPT-AI | Data Pipeline</title>
+    <title>VNPT-AI | Data Pipeline Dashboard</title>
     
     <!-- Apple Web App Config -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,9 +14,11 @@
     <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/VNPT_Logo.svg/120px-VNPT_Logo.svg.png">
     
     <link rel="stylesheet" href="/styles.css">
+    
+    <!-- Chart.js for interactive charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- Apple-style minimal background blur effect -->
     <div class="ambient-background"></div>
 
     <div class="app-container">
@@ -24,8 +26,8 @@
             <div class="header-content">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/VNPT_Logo.svg/1200px-VNPT_Logo.svg.png" alt="VNPT" class="logo">
                 <div class="titles">
-                    <h1>Data Pipeline & NLP Analytics</h1>
-                    <p>Internship Project • Phase 5 Dashboard</p>
+                    <h1>Phase 5 Dashboard</h1>
+                    <p>NLP Analytics & Chat Explorer</p>
                 </div>
             </div>
             <div class="status-badge" id="api-status">
@@ -34,52 +36,68 @@
             </div>
         </header>
 
-        <section class="overview-section fade-in">
-            <div class="info-card">
-                <h3>Pipeline Architecture</h3>
-                <p class="subtitle">End-to-end data migration and analysis flow</p>
-                <div class="arch-flow">
-                    <div class="node">Cassandra<br><small>Source DB</small></div>
-                    <div class="arrow">→</div>
-                    <div class="node highlight">PySpark<br><small>ETL & NLP</small></div>
-                    <div class="arrow">→</div>
-                    <div class="node">ScyllaDB<br><small>Target DB</small></div>
+        <!-- NLP Analytics Section (Week 12 Requirement) -->
+        <section class="analytics-section fade-in">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2>🧠 NLP Analytics & Statistics</h2>
+                    <p>Visualizing sentiment trends and top keywords</p>
                 </div>
-            </div>
+                
+                <div class="metrics-container row">
+                    <div class="metric-card">
+                        <h4>Total Rooms</h4>
+                        <div class="metric-value" id="rooms-val">--</div>
+                    </div>
+                    <div class="metric-card">
+                        <h4>Total Messages</h4>
+                        <div class="metric-value" id="msgs-val">--</div>
+                    </div>
+                </div>
 
-            <div class="metrics-container">
-                <div class="metric-card">
-                    <h4>Total Chat Rooms</h4>
-                    <div class="metric-value" id="rooms-val">--</div>
-                    <p class="metric-label">Analyzed</p>
-                </div>
-                <div class="metric-card">
-                    <h4>Total Messages</h4>
-                    <div class="metric-value" id="msgs-val">--</div>
-                    <p class="metric-label">Processed via ETL</p>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Sentiment Trend (Positive/Negative/Neutral)</h3>
+                        <div class="img-container">
+                            <!-- Image generated from Phase 4 -->
+                            <img src="/assets/sentiment_trend.png" alt="Sentiment Trend Chart" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0iI2ZmZiIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg=='">
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <h3>Top Keywords WordCloud</h3>
+                        <div class="img-container">
+                            <!-- Image generated from Phase 4 -->
+                            <img src="/assets/wordcloud_room_999.png" alt="WordCloud Chart" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0iI2ZmZiIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg=='">
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <main class="explorer-section fade-in delay-1">
+        <!-- Chat Explorer Section -->
+        <main class="explorer-section fade-in delay-1" style="margin-top: 2rem;">
             <div class="glass-panel">
                 <div class="panel-header">
-                    <h2>Chat Room Explorer</h2>
-                    <p>Real-time query with ScyllaDB Time-Bucketing Pagination</p>
+                    <h2>💬 Chat Room Explorer</h2>
+                    <p>Filter data by Room ID with ScyllaDB Pagination</p>
                 </div>
                 
                 <div class="search-controls">
                     <div class="input-wrapper">
-                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" id="room-input" placeholder="Enter Room ID (e.g. room_999)" value="room_999" autocomplete="off" spellcheck="false">
+                        <!-- Selectbox as per Week 12 Requirement -->
+                        <select id="room-select" class="apple-select">
+                            <option value="" disabled selected>Loading rooms...</option>
+                        </select>
+                        <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </div>
-                    <button id="load-btn" class="apple-btn">Explore</button>
+                    <button id="load-btn" class="apple-btn" disabled>Explore</button>
                 </div>
 
                 <div class="chat-container" id="chat-container">
                     <div class="empty-state">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                        <p>Search a room to view messages</p>
+                        <p>Select a room to view messages</p>
                     </div>
                 </div>
             </div>
