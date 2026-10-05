@@ -1,18 +1,8 @@
 {
-  "version": 2,
-  "functions": {
-    "api/index.py": {
-      "includeFiles": "phase_5_dashboard/**"
-    }
-  },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.py"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/public/$1"
+      "source": "/api/:path*",
+      "destination": "https://intern-vnpt-ai.onrender.com/api/:path*"
     }
   ]
 }
