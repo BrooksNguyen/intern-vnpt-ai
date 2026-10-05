@@ -46,13 +46,17 @@ def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
         # Download and unzip
         api.dataset_download_files(dataset_slug, path=download_path, unzip=True)
         
-        # Find CSV
-        csv_files = glob.glob(f"{download_path}/*.csv")
-        if not csv_files:
-            raise ValueError("No CSV files found in the downloaded dataset.")
+        # Find CSV or TXT files recursively
+        data_files = glob.glob(f"{download_path}/**/*.csv", recursive=True) + glob.glob(f"{download_path}/**/*.txt", recursive=True)
+        # Filter out readme files
+        data_files = [f for f in data_files if "readme" not in f.lower() and os.path.isfile(f)]
         
-        target_csv = csv_files[0]
-        df = pd.read_csv(target_csv, nrows=1000)
+        if not data_files:
+            raise ValueError(f"No CSV or TXT data files found in the downloaded dataset. Found: {glob.glob(f'{download_path}/**/*', recursive=True)}")
+        
+        target_csv = data_files[0]
+        # Use simple separator for txt files if needed, or let pandas infer
+        df = pd.read_csv(target_csv, nrows=1000, sep=None, engine='python')
         
         if df.empty:
             raise ValueError("The CSV file is empty.")
@@ -72,6 +76,7 @@ def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
     except BaseException as e:
         # MOCK FALLBACK for Vercel/Timeout/Crash environments
         # Guarantees the website is usable ASAP even if Kaggle download fails/crashes.
+        error_msg = str(e)
         texts = [
             "This is a great dataset, very useful!",
             "The data is terrible and full of missing values.",
