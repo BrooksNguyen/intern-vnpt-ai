@@ -18,6 +18,11 @@ def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
     dataset_slug: e.g., 'kazanova/sentiment140'
     """
     try:
+        # VERCEL HACK: Vercel's 10s timeout kills the process violently (SIGKILL).
+        # We must skip the download completely to guarantee it works.
+        if os.environ.get('VERCEL'):
+            raise ValueError("Bypassing Kaggle download on Vercel to prevent SIGKILL timeouts.")
+
         # Check for credentials
         if not os.environ.get('KAGGLE_USERNAME') or not os.environ.get('KAGGLE_KEY'):
             raise ValueError("Missing credentials")
