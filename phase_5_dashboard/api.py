@@ -138,7 +138,7 @@ def analyze_kaggle(
         return result
     except HTTPException as he:
         raise he
-    except Exception as e:
+    except BaseException as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
