@@ -1,3 +1,12 @@
+"""
+PySpark ETL Migration — Phase 3
+Migrates data from Apache Cassandra to ScyllaDB with time-bucketing transformation.
+Supports default and optimized execution modes for Spark I/O tuning.
+
+Usage:
+  spark-submit --packages com.datastax.spark:spark-cassandra-connector_2.12:3.4.1 \
+    pyspark_etl_migration.py --mode optimized
+"""
 import os
 import sys
 import time
@@ -23,7 +32,7 @@ def main():
     SCYLLA_PORT = os.getenv("SCYLLA_PORT", "9042")
 
     logging.info(f"Initiating PySpark ETL Migration process (mode={args.mode})...")
-    
+
     builder = SparkSession.builder \
         .appName(f"PySpark_ETL_Migration_{args.mode}") \
         .config("spark.cassandra.connection.host", CASS_HOST) \
@@ -37,23 +46,24 @@ def main():
             .config("spark.cassandra.connection.keepAliveMS", "10000")
 
     spark = builder.getOrCreate()
-    
+
     try:
         logging.info(f"Connecting to source Cassandra cluster at {CASS_HOST}:{CASS_PORT}...")
         read_start = time.time()
-        
+
         df_source = spark.read \
             .format("org.apache.spark.sql.cassandra") \
             .options(table="chat_table", keyspace="chat_system") \
             .load()
-            
+
         logging.info(f"Successfully connected and initialized read stream in {time.time() - read_start:.2f} seconds.")
 
+        # Transform: add bucket_id column derived from timestamp (YYYY-MM format)
         df_transformed = df_source.withColumn("bucket_id", date_format(col("timestamp"), "yyyy-MM"))
 
         logging.info(f"Initiating data load to target ScyllaDB cluster at {SCYLLA_HOST}:{SCYLLA_PORT}...")
         write_start = time.time()
-        
+
         df_transformed.write \
             .format("org.apache.spark.sql.cassandra") \
             .options(table="chat_table_bucketed", keyspace="chat_system_target") \
@@ -61,22 +71,23 @@ def main():
             .option("spark.cassandra.connection.port", SCYLLA_PORT) \
             .mode("append") \
             .save()
-            
+
         write_time = time.time() - write_start
         logging.info(f"Data migration completed. Total write time: {write_time:.2f} seconds.")
 
+        # Data reconciliation: verify source count matches target count
         src_count = df_source.count()
         tgt_df = spark.read.format("org.apache.spark.sql.cassandra") \
             .options(table="chat_table_bucketed", keyspace="chat_system_target") \
             .option("spark.cassandra.connection.host", SCYLLA_HOST).load()
         tgt_count = tgt_df.count()
 
-        logging.info("=== KẾT QUẢ ĐỐI SOÁT DỮ LIỆU ===")
+        logging.info("=== DATA RECONCILIATION RESULTS ===")
         logging.info(f"Cassandra (Source): {src_count:,} rows")
         logging.info(f"ScyllaDB  (Target): {tgt_count:,} rows")
 
-        assert src_count == tgt_count, "❌ CẢNH BÁO: Số lượng bản ghi không khớp!"
-        logging.info("✅ Migration toàn vẹn 100%, không thất thoát dữ liệu!")
+        assert src_count == tgt_count, "WARNING: Record counts do not match!"
+        logging.info("Migration integrity verified: 100% data preserved, zero data loss.")
 
     except Exception as e:
         logging.error(f"ETL Migration failed with error: {e}")
