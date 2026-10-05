@@ -1,42 +1,42 @@
-# Báo Cáo Thiết Kế Kiến Trúc ScyllaDB
+# ScyllaDB Architecture Design Report
 
-Tài liệu tóm tắt các quyết định thiết kế khi chuyển đổi cơ sở dữ liệu từ Cassandra sang ScyllaDB.
+Summary of design decisions for the Cassandra to ScyllaDB database migration.
 
 ## 1. Token-Aware Routing
-ScyllaDB và Cassandra phân bổ dữ liệu dựa trên hàm băm (Murmur3) của partition key. Việc cấu hình `TokenAware` trên client driver giúp gửi truy vấn trực tiếp đến Node chứa dữ liệu, bỏ qua Coordinator Node, từ đó giảm độ trễ (latency).
+ScyllaDB and Cassandra distribute data based on the Murmur3 hash function of the partition key. Configuring `TokenAware` routing on the client driver sends queries directly to the node holding the data, bypassing the Coordinator Node, thereby reducing latency.
 
-## 2. Vấn đề của Kiến trúc cũ
-- **Schema cũ:** `PRIMARY KEY (room_id, message_id)`. Toàn bộ dữ liệu của một phòng chat lưu trên một partition duy nhất.
-- **Vấn đề:** Các phòng chat lớn (như `room_999`) gây ra hiện tượng Hot Partition, làm quá tải một số Node cụ thể. Việc truy vấn theo các trường phụ (`msg_type`, `device`) yêu cầu `ALLOW FILTERING`, dẫn đến full scan và giảm hiệu năng.
+## 2. Problems with the Legacy Architecture
+- **Old Schema:** `PRIMARY KEY (room_id, message_id)`. All data for a chat room is stored on a single partition.
+- **Problem:** Large chat rooms (e.g., `room_999`) cause Hot Partition issues, overloading specific nodes. Queries on secondary fields (`msg_type`, `device`) require `ALLOW FILTERING`, leading to full scans and degraded performance.
 
-## 3. Giải pháp: Composite Partition Key & Time Bucketing
-Cấu trúc khóa chính được thiết kế lại, bổ sung trường `bucket_id` (định dạng `YYYY-MM`):
+## 3. Solution: Composite Partition Key & Time Bucketing
+The primary key was redesigned with an additional `bucket_id` field (format `YYYY-MM`):
 
 ```sql
 PRIMARY KEY ((room_id, bucket_id), message_id)
 ```
 
-**Ưu điểm:** Dữ liệu của các phòng chat lớn tự động phân tách theo từng tháng vào các partition khác nhau, đảm bảo phân bổ tải trọng đồng đều trên toàn cụm (cluster).
+**Advantages:** Data from large chat rooms is automatically split by month into different partitions, ensuring even load distribution across the cluster.
 
-## 4. Các Mẫu Truy Vấn Hỗ trợ Backend
+## 4. Backend Query Patterns
 
-**Lấy 50 tin nhắn mới nhất:**
+**Fetch 50 most recent messages:**
 ```sql
 SELECT * FROM chat_system_target.chat_table_bucketed
 WHERE room_id = 'room_1' AND bucket_id = '2026-07'
 LIMIT 50;
 ```
 
-**Truy xuất phân trang lịch sử tin nhắn:**
+**Paginated history retrieval:**
 ```sql
 SELECT * FROM chat_system_target.chat_table_bucketed
 WHERE room_id = 'room_1' AND bucket_id = '2026-07'
   AND message_id < 6ff1b35a-8405-11f1-8e64-af4db1424c6c
 LIMIT 50;
 ```
-*(Khóa sắp xếp `message_id DESC` đảm bảo kết quả luôn trả về tin nhắn mới nhất trước).*
+*(Clustering order `message_id DESC` ensures results always return newest messages first).*
 
-## 5. Quản Lý Vòng Đời Dữ Liệu
-- **TimeWindowCompactionStrategy (TWCS):** Nhóm các SSTable theo khung thời gian (ví dụ: 1 ngày). Tối ưu hóa việc xóa dữ liệu cũ, giảm tải CPU so với nén chéo (cross-compaction).
-- **Time-To-Live (TTL):** Thiết lập `default_time_to_live = 2592000` (30 ngày) để tự động xóa dữ liệu hết hạn. Tỷ lệ TTL/window được duy trì < 50 theo giới hạn của ScyllaDB.
-- **Tombstone:** Các bản ghi hết hạn TTL sẽ được đánh dấu (tombstone) và giữ lại trong `gc_grace_seconds` (mặc định 10 ngày) để hoàn tất đồng bộ (sync) giữa các replica trước khi xóa vật lý.
+## 5. Data Lifecycle Management
+- **TimeWindowCompactionStrategy (TWCS):** Groups SSTables by time window (e.g., 1 day). Optimizes deletion of old data and reduces CPU load compared to cross-compaction.
+- **Time-To-Live (TTL):** Set `default_time_to_live = 15552000` (180 days) to automatically expire old data. The Cold Archiver runs on a 6-month cycle, ensuring data is archived before TTL expiration.
+- **Tombstones:** Expired TTL records are marked as tombstones and retained for `gc_grace_seconds` (default 10 days = 864000s) to complete replica synchronization before physical deletion.
