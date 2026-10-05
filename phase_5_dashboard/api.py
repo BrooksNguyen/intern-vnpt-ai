@@ -12,7 +12,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from backend_service import ChatBackendService
+try:
+    from .backend_service import ChatBackendService
+except ImportError:
+    from backend_service import ChatBackendService
 
 # ---------------------------------------------------------------------------
 # Lifespan (replaces deprecated on_event)
@@ -133,7 +136,11 @@ def analyze_kaggle(
     Requires KAGGLE_USERNAME and KAGGLE_KEY environment variables.
     """
     try:
-        from kaggle_analyzer import analyze_kaggle_dataset
+        try:
+            from .kaggle_analyzer import analyze_kaggle_dataset
+        except ImportError:
+            from kaggle_analyzer import analyze_kaggle_dataset
+            
         result = analyze_kaggle_dataset(dataset, text_column)
         return result
     except HTTPException as he:
