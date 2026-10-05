@@ -51,11 +51,13 @@ app.add_middleware(
 # Endpoints
 # ---------------------------------------------------------------------------
 @app.get("/")
+@app.get("/api/")
 def read_root():
     return {"message": "ScyllaDB Chat API is running", "version": "1.0.0"}
 
 
 @app.get("/health")
+@app.get("/api/health")
 def health_check():
     """Check database connection status."""
     connected = db_service.session is not None
@@ -63,6 +65,7 @@ def health_check():
 
 
 @app.get("/messages")
+@app.get("/api/messages")
 def get_messages(
     room_id: str = Query(..., description="Chat Room ID"),
     limit: int = Query(50, ge=1, le=500, description="Maximum number of messages"),
@@ -106,6 +109,7 @@ def get_messages(
 
 
 @app.get("/rooms")
+@app.get("/api/rooms")
 def get_rooms():
     """Get list of all available room_ids in the system."""
     try:
@@ -116,6 +120,7 @@ def get_rooms():
 
 
 @app.get("/stats")
+@app.get("/api/stats")
 def get_stats():
     """Get statistics of message count per room."""
     try:
@@ -127,6 +132,7 @@ def get_stats():
 
 
 @app.get("/analyze/kaggle")
+@app.get("/api/analyze/kaggle")
 def analyze_kaggle(
     dataset: str = Query(..., description="Kaggle Dataset Slug (e.g., 'kazanova/sentiment140')"),
     text_column: Optional[str] = Query(None, description="Optional specific column name to analyze")
