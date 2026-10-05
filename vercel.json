@@ -19,5 +19,10 @@
       "src": "/(.*)",
       "dest": "/public/$1"
     }
-  ]
+  ],
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "phase_5_dashboard/**"
+    }
+  }
 }
