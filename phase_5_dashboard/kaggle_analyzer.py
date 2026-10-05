@@ -5,13 +5,6 @@ from io import BytesIO
 import pandas as pd
 from fastapi import HTTPException
 
-# Ensure kaggle is installed
-try:
-    # If credentials are not set, importing kaggle might raise OSError or ValueError
-    import kaggle
-except Exception:
-    kaggle = None
-
 def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
     """
     Downloads a Kaggle dataset, finds the first CSV, and performs basic NLP analysis.
@@ -23,21 +16,35 @@ def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
         if os.environ.get('VERCEL'):
             raise ValueError("Bypassing Kaggle download on Vercel to prevent SIGKILL timeouts.")
 
-        # Check for credentials (support both legacy Username/Key and new API Token)
+        # 1. Robust Kaggle Authentication Setup
         has_legacy = os.environ.get('KAGGLE_USERNAME') and os.environ.get('KAGGLE_KEY')
         has_new_token = os.environ.get('KAGGLE_API_TOKEN')
         
         if not (has_legacy or has_new_token):
             raise ValueError("Missing credentials. Please set KAGGLE_API_TOKEN in the environment.")
 
-        if not kaggle:
-            raise ValueError("Kaggle not loaded")
+        # Forcefully write the access token to ~/.kaggle/access_token so the Kaggle CLI finds it securely
+        if has_new_token:
+            kaggle_dir = os.path.expanduser("~/.kaggle")
+            os.makedirs(kaggle_dir, exist_ok=True)
+            token_path = os.path.join(kaggle_dir, "access_token")
+            with open(token_path, "w") as f:
+                f.write(has_new_token.strip())
+            os.chmod(token_path, 0o600)
+
+        # 2. Import Kaggle *after* credentials are set up to avoid init crashes
+        try:
+            from kaggle.api.kaggle_api_extended import KaggleApi
+            api = KaggleApi()
+            api.authenticate()
+        except Exception as e:
+            raise ValueError(f"Kaggle API Authentication Failed: {str(e)}")
 
         download_path = "/tmp/kaggle_data"
         os.makedirs(download_path, exist_ok=True)
         
         # Download and unzip
-        kaggle.api.dataset_download_files(dataset_slug, path=download_path, unzip=True)
+        api.dataset_download_files(dataset_slug, path=download_path, unzip=True)
         
         # Find CSV
         csv_files = glob.glob(f"{download_path}/*.csv")
