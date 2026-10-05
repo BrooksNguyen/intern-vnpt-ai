@@ -2,106 +2,214 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-    <title>VNPT-AI | Data Pipeline Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VNPT-AI | Data Pipeline Project</title>
     
-    <!-- Apple Web App Config -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="VNPT AI">
-    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/VNPT_Logo.svg/120px-VNPT_Logo.svg.png">
+    <!-- Meta configurations -->
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/VNPT_Logo.svg/120px-VNPT_Logo.svg.png">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="/styles.css">
-    
-    <!-- Chart.js for interactive charts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="ambient-background"></div>
-
-    <div class="app-container">
-        <header class="app-header">
-            <div class="header-content">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/VNPT_Logo.svg/1200px-VNPT_Logo.svg.png" alt="VNPT" class="logo">
-                <div class="titles">
-                    <h1>Phase 5 Dashboard</h1>
-                    <p>NLP Analytics & Chat Explorer</p>
-                </div>
+    
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand" id="nav-home">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/VNPT_Logo.svg/120px-VNPT_Logo.svg.png" alt="VNPT Logo">
+                <span class="brand-text">Data Pipeline Project</span>
             </div>
-            <div class="status-badge" id="api-status">
-                <span class="indicator"></span>
-                <span class="status-text">Connecting...</span>
+            <div class="nav-links">
+                <a href="https://github.com/BrooksNguyen/intern-vnpt-ai" target="_blank" class="github-link">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                    GitHub Repo
+                </a>
+                <button id="nav-launch-btn" class="btn-primary">Launch Dashboard</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- VIEW 1: LANDING PAGE -->
+    <div id="landing-view" class="view active">
+        <!-- Hero Section -->
+        <header class="hero">
+            <div class="hero-content">
+                <div class="badge">VNPT-AI Internship 2026</div>
+                <h1>Scalable Data Pipeline & <span class="text-gradient">NLP Analytics</span></h1>
+                <p>An end-to-end Big Data project migrating millions of chat records from Cassandra to ScyllaDB using PySpark, performing Vietnamese NLP, and serving insights via FastAPI.</p>
+                <div class="hero-actions">
+                    <button id="hero-launch-btn" class="btn-primary btn-large">Launch Dashboard <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
+                </div>
             </div>
         </header>
 
-        <!-- NLP Analytics Section (Week 12 Requirement) -->
-        <section class="analytics-section fade-in">
-            <div class="glass-panel">
-                <div class="panel-header">
-                    <h2>🧠 NLP Analytics & Statistics</h2>
-                    <p>Visualizing sentiment trends and top keywords</p>
+        <main class="landing-main">
+            <!-- Tech Stack -->
+            <section class="section">
+                <div class="section-header">
+                    <h2>Technologies Used</h2>
+                    <p>Modern data engineering stack for high availability and performance.</p>
                 </div>
+                <div class="tech-grid">
+                    <div class="tech-card"><h3>Apache Cassandra</h3><p>Source Database</p></div>
+                    <div class="tech-card highlight"><h3>ScyllaDB</h3><p>Target Database (Time-Bucketed)</p></div>
+                    <div class="tech-card"><h3>PySpark</h3><p>ETL & Data Migration</p></div>
+                    <div class="tech-card"><h3>FastAPI</h3><p>Backend API Services</p></div>
+                    <div class="tech-card"><h3>NLTK / Underthesea</h3><p>Vietnamese NLP Processing</p></div>
+                    <div class="tech-card"><h3>Docker & Vercel</h3><p>Containerization & Deployment</p></div>
+                </div>
+            </section>
+
+            <!-- Process & Roadmap -->
+            <section class="section bg-light">
+                <div class="section-header">
+                    <h2>Project Roadmap</h2>
+                    <p>The 6-phase journey of the internship project.</p>
+                </div>
+                <div class="roadmap-grid">
+                    <div class="step-card">
+                        <div class="step-num">0</div>
+                        <h4>Environment Setup</h4>
+                        <p>Docker Compose initialization and Mock Data generation.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">1</div>
+                        <h4>Data Profiling</h4>
+                        <p>Identifying the "Hot Partition" bottleneck using PySpark EDA.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">2</div>
+                        <h4>ScyllaDB Redesign</h4>
+                        <p>Applying Time-Bucketing Composite Primary Keys and TWCS.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">3</div>
+                        <h4>PySpark ETL</h4>
+                        <p>Migrating data in parallel and archiving cold records to Parquet.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">4</div>
+                        <h4>NLP Analysis</h4>
+                        <p>Sentiment classification and WordCloud generation for text data.</p>
+                    </div>
+                    <div class="step-card highlight-step">
+                        <div class="step-num">5</div>
+                        <h4>API & Dashboard</h4>
+                        <p>Serving data via FastAPI with Backtracking Pagination.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- How to Deploy -->
+            <section class="section">
+                <div class="section-header">
+                    <h2>How to Deploy Locally</h2>
+                    <p>Run the entire pipeline on your own machine with a single script.</p>
+                </div>
+                <div class="deploy-card">
+                    <div class="deploy-step">
+                        <span class="circle">1</span>
+                        <div class="deploy-text">
+                            <strong>Clone & Install Requirements</strong>
+                            <code>git clone https://github.com/BrooksNguyen/intern-vnpt-ai.git</code>
+                        </div>
+                    </div>
+                    <div class="deploy-step">
+                        <span class="circle">2</span>
+                        <div class="deploy-text">
+                            <strong>Start Database Clusters</strong>
+                            <code>docker compose up -d</code>
+                        </div>
+                    </div>
+                    <div class="deploy-step">
+                        <span class="circle">3</span>
+                        <div class="deploy-text">
+                            <strong>Run the 1-Click Pipeline</strong>
+                            <code>bash run_pipeline.sh</code>
+                            <small>This generates mock data, initializes ScyllaDB, runs PySpark ETL, and executes NLP analysis automatically.</small>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>Designed and built by <strong>Brooks Nguyen</strong> for VNPT-AI Internship 2026.</p>
+        </footer>
+    </div>
+
+    <!-- VIEW 2: DASHBOARD (LAUNCH PAGE) -->
+    <div id="dashboard-view" class="view" style="display: none;">
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <div>
+                    <h2>Phase 5: Interactive Dashboard</h2>
+                    <p class="subtitle">Real-time ScyllaDB querying & NLP Visualizations</p>
+                </div>
+                <div class="status-badge" id="api-status">
+                    <span class="indicator"></span>
+                    <span class="status-text">Connecting...</span>
+                </div>
+            </div>
+
+            <!-- NLP Analytics Section -->
+            <section class="dashboard-section">
+                <div class="section-title">🧠 NLP Analytics & Statistics</div>
                 
-                <div class="metrics-container row">
+                <div class="metrics-row">
                     <div class="metric-card">
-                        <h4>Total Rooms</h4>
+                        <div class="metric-label">Total Analyzed Rooms</div>
                         <div class="metric-value" id="rooms-val">--</div>
                     </div>
                     <div class="metric-card">
-                        <h4>Total Messages</h4>
+                        <div class="metric-label">Total Processed Messages</div>
                         <div class="metric-value" id="msgs-val">--</div>
                     </div>
                 </div>
 
                 <div class="charts-grid">
                     <div class="chart-card">
-                        <h3>Sentiment Trend (Positive/Negative/Neutral)</h3>
+                        <h4>Sentiment Trend</h4>
                         <div class="img-container">
-                            <!-- Image generated from Phase 4 -->
-                            <img src="/assets/sentiment_trend.png" alt="Sentiment Trend Chart" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0iI2ZmZiIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg=='">
+                            <img src="/assets/sentiment_trend.png" alt="Sentiment Trend Chart" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmMThmOSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjNmM3NTdkIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbWFnZSBOb3QgRm91bmQ8L3RleHQ+PC9zdmc+'">
                         </div>
                     </div>
-                    
                     <div class="chart-card">
-                        <h3>Top Keywords WordCloud</h3>
+                        <h4>Top Keywords WordCloud</h4>
                         <div class="img-container">
-                            <!-- Image generated from Phase 4 -->
-                            <img src="/assets/wordcloud_room_999.png" alt="WordCloud Chart" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0iI2ZmZiIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg=='">
+                            <img src="/assets/wordcloud_room_999.png" alt="WordCloud Chart" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmMThmOSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjNmM3NTdkIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbWFnZSBOb3QgRm91bmQ8L3RleHQ+PC9zdmc+'">
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- Chat Explorer Section -->
-        <main class="explorer-section fade-in delay-1" style="margin-top: 2rem;">
-            <div class="glass-panel">
-                <div class="panel-header">
-                    <h2>💬 Chat Room Explorer</h2>
-                    <p>Filter data by Room ID with ScyllaDB Pagination</p>
-                </div>
+            <!-- Chat Explorer Section -->
+            <section class="dashboard-section">
+                <div class="section-title">💬 Chat Room Explorer</div>
                 
-                <div class="search-controls">
-                    <div class="input-wrapper">
-                        <!-- Selectbox as per Week 12 Requirement -->
-                        <select id="room-select" class="apple-select">
-                            <option value="" disabled selected>Loading rooms...</option>
+                <div class="explorer-card">
+                    <div class="search-controls">
+                        <select id="room-select" class="form-select">
+                            <option value="" disabled selected>Loading available rooms...</option>
                         </select>
-                        <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        <button id="load-btn" class="btn-primary" disabled>Explore Messages</button>
                     </div>
-                    <button id="load-btn" class="apple-btn" disabled>Explore</button>
-                </div>
 
-                <div class="chat-container" id="chat-container">
-                    <div class="empty-state">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                        <p>Select a room to view messages</p>
+                    <div class="chat-container" id="chat-container">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            <p>Select a room to view its message history</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </main>
+            </section>
+        </div>
     </div>
 
     <script src="/app.js"></script>

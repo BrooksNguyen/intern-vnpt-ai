@@ -1,4 +1,47 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- View Navigation Logic ---
+    const navHome = document.getElementById('nav-home');
+    const navLaunchBtn = document.getElementById('nav-launch-btn');
+    const heroLaunchBtn = document.getElementById('hero-launch-btn');
+    
+    const landingView = document.getElementById('landing-view');
+    const dashboardView = document.getElementById('dashboard-view');
+
+    function showDashboard() {
+        landingView.classList.remove('active');
+        setTimeout(() => {
+            landingView.style.display = 'none';
+            dashboardView.style.display = 'block';
+            // Trigger reflow
+            void dashboardView.offsetWidth;
+            dashboardView.classList.add('active');
+            window.scrollTo(0, 0);
+            
+            // Fetch stats when dashboard is opened
+            if(!window.dashboardInitialized) {
+                initDashboard();
+                window.dashboardInitialized = true;
+            }
+        }, 400); // Wait for fade out
+    }
+
+    function showLanding() {
+        dashboardView.classList.remove('active');
+        setTimeout(() => {
+            dashboardView.style.display = 'none';
+            landingView.style.display = 'block';
+            void landingView.offsetWidth;
+            landingView.classList.add('active');
+            window.scrollTo(0, 0);
+        }, 400);
+    }
+
+    navLaunchBtn.addEventListener('click', showDashboard);
+    heroLaunchBtn.addEventListener('click', showDashboard);
+    navHome.addEventListener('click', showLanding);
+
+
+    // --- Dashboard Logic ---
     const API_BASE = '/api';
 
     const statusBadge = document.getElementById('api-status');
@@ -21,7 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.requestAnimationFrame(step);
     }
 
-    // Week 12 Requirement: Fetch Rooms to populate Selectbox
+    async function initDashboard() {
+        fetchStats();
+        fetchRooms();
+    }
+
     async function fetchRooms() {
         try {
             const res = await fetch(`${API_BASE}/rooms`);
@@ -29,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             roomSelect.innerHTML = '<option value="" disabled selected>Select a Room ID...</option>';
             if (data.rooms && data.rooms.length > 0) {
-                // Sort rooms alphabetically for better UX
                 const sortedRooms = data.rooms.sort((a, b) => {
                     const numA = parseInt(a.replace(/\D/g, '')) || 0;
                     const numB = parseInt(b.replace(/\D/g, '')) || 0;
@@ -42,7 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     option.textContent = room;
                     roomSelect.appendChild(option);
                 });
-                loadBtn.disabled = false;
             } else {
                 roomSelect.innerHTML = '<option value="" disabled>No rooms available</option>';
             }
@@ -60,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (healthData.status === 'healthy') {
                 statusBadge.classList.add('healthy');
                 statusBadge.classList.remove('error');
-                statusText.innerText = 'Connected to API';
+                statusText.innerText = 'API Connected';
             } else throw new Error('Unhealthy');
 
             const statsRes = await fetch(`${API_BASE}/stats`);
@@ -84,16 +129,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function getDeviceEmoji(device) {
-        const map = { 'ios': '📱', 'android': '🤖', 'web': '🌐', 'desktop': '💻' };
-        return map[device] || '💬';
-    }
-
     async function loadMessages() {
         const roomId = roomSelect.value;
         if (!roomId) return;
 
-        loadBtn.innerText = 'Loading';
+        loadBtn.innerText = 'Loading...';
         loadBtn.disabled = true;
         chatContainer.style.opacity = '0.5';
 
@@ -108,11 +148,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.data.forEach((msg, index) => {
                     const msgDiv = document.createElement('div');
                     msgDiv.className = 'message';
-                    msgDiv.style.animationDelay = `${index * 0.03}s`;
+                    
+                    // Small fade-in animation
+                    msgDiv.style.opacity = '0';
+                    msgDiv.style.animation = `fade-in 0.4s ease forwards ${index * 0.03}s`;
                     
                     msgDiv.innerHTML = `
                         <div class="message-header">
-                            <span class="message-user">${msg.user_id} ${getDeviceEmoji(msg.device)}</span>
+                            <span class="message-user">${msg.user_id}</span>
                             <span>${formatDate(msg.timestamp)}</span>
                         </div>
                         <div class="message-content">${msg.content}</div>
@@ -121,14 +164,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 chatContainer.scrollTop = 0;
             } else {
-                chatContainer.innerHTML = `<div class="empty-state"><p>No messages found.</p></div>`;
+                chatContainer.innerHTML = `<div class="empty-state"><p>No messages found in this room.</p></div>`;
             }
 
         } catch (error) {
             chatContainer.style.opacity = '1';
-            chatContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>API Connection Failed</p></div>`;
+            chatContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>API Connection Failed. Please ensure the backend is running.</p></div>`;
         } finally {
-            loadBtn.innerText = 'Explore';
+            loadBtn.innerText = 'Explore Messages';
             loadBtn.disabled = false;
         }
     }
@@ -139,7 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
             loadBtn.disabled = false;
         }
     });
-
-    fetchStats();
-    fetchRooms();
+    
+    // Add simple fade-in keyframe dynamically for messages
+    const style = document.createElement('style');
+    style.innerHTML = `@keyframes fade-in { to { opacity: 1; transform: translateY(0); } }`;
+    document.head.appendChild(style);
 });
