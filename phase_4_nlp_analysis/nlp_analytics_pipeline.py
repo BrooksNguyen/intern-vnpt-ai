@@ -1,9 +1,13 @@
 """
 NLP Analytics Pipeline — Phase 4
-Đọc dữ liệu từ ScyllaDB, tiền xử lý văn bản tiếng Việt,
-trích xuất Top 50 Keywords, sinh WordCloud và phân tích cảm xúc.
+Reads data from ScyllaDB, preprocesses Vietnamese text,
+extracts Top 50 Keywords, generates WordCloud, and performs sentiment analysis.
 
-Hỗ trợ chế độ --offline để chạy không cần ScyllaDB (dùng mock data).
+Supports --offline mode to run without ScyllaDB (uses mock data).
+
+Usage:
+  python nlp_analytics_pipeline.py              # Online mode (requires ScyllaDB)
+  python nlp_analytics_pipeline.py --offline     # Offline mode (mock data)
 """
 import os
 import sys
@@ -50,7 +54,7 @@ PUNCT_PATTERN = re.compile(r'[^\w\s]', flags=re.UNICODE)
 SPACES_PATTERN = re.compile(r'\s+')
 
 # ---------------------------------------------------------------------------
-# Sentiment dictionaries
+# Sentiment dictionaries (Vietnamese keywords)
 # ---------------------------------------------------------------------------
 POSITIVE_WORDS = {
     "tuyệt_vời", "tốt", "xuất_sắc", "nhanh", "ổn", "thích", "hay",
@@ -71,7 +75,7 @@ NEGATIVE_EMOTICONS = {"=((", "=(((", ":("}
 # ---------------------------------------------------------------------------
 def clean_text(text: str) -> tuple[str, list[str]]:
     """
-    Tiền xử lý văn bản tiếng Việt.
+    Preprocess Vietnamese text.
     Returns:
         tuple[str, list[str]]: (cleaned_string, list_of_tokens)
     """
@@ -99,7 +103,7 @@ def clean_text(text: str) -> tuple[str, list[str]]:
 
     final_text = " ".join(cleaned_tokens)
 
-    # Khôi phục emoticons gốc
+    # Restore original emoticons
     for i, emo in enumerate(emoticons_found):
         final_text = final_text.replace(f"EMO_{i}", emo)
         for j, token in enumerate(cleaned_tokens):
@@ -111,7 +115,7 @@ def clean_text(text: str) -> tuple[str, list[str]]:
 
 def analyze_sentiment(tokens: list[str]) -> tuple[str, float]:
     """
-    Phân tích cảm xúc dựa trên từ điển + emoticons.
+    Dictionary-based sentiment analysis with emoticon support.
     Returns:
         tuple[str, float]: (label, score)
             label: 'positive' | 'negative' | 'neutral'
@@ -144,7 +148,7 @@ def analyze_sentiment(tokens: list[str]) -> tuple[str, float]:
 # Data source functions
 # ---------------------------------------------------------------------------
 def fetch_all_messages_db(session):
-    """Đọc toàn bộ tin nhắn từ ScyllaDB."""
+    """Fetch all messages from ScyllaDB."""
     logging.info("Fetching all messages from ScyllaDB...")
     rows = session.execute(
         "SELECT room_id, user_id, content, timestamp FROM chat_table_bucketed;"
@@ -163,8 +167,8 @@ def fetch_all_messages_db(session):
 
 def generate_mock_messages(count: int = 20000) -> list[dict]:
     """
-    Sinh dữ liệu mock offline (giống generate_mock_data.py).
-    Dùng khi không có kết nối ScyllaDB.
+    Generate mock offline data (similar to generate_mock_data.py).
+    Used when ScyllaDB connection is not available.
     """
     logging.info(f"Generating {count:,} mock messages for offline NLP analysis...")
 
@@ -227,9 +231,9 @@ def generate_mock_messages(count: int = 20000) -> list[dict]:
 # Pipeline steps
 # ---------------------------------------------------------------------------
 def extract_top_keywords(all_tokens: list[str], top_n: int = 50) -> list[dict]:
-    """Đếm tần suất và trả về Top N keywords."""
+    """Count frequency and return Top N keywords."""
     counter = Counter(all_tokens)
-    # Loại bỏ emoticons và token quá ngắn khỏi keyword list
+    # Filter out emoticon placeholders and very short tokens from keyword list
     filtered = {k: v for k, v in counter.items()
                 if len(k) > 1 and not re.match(r'^(EMO_\d+|[=:<()\[\]]+)$', k)}
     top = sorted(filtered.items(), key=lambda x: x[1], reverse=True)[:top_n]
@@ -237,7 +241,7 @@ def extract_top_keywords(all_tokens: list[str], top_n: int = 50) -> list[dict]:
 
 
 def generate_wordcloud(all_tokens: list[str], output_filename: str = "wordcloud_room_999.png"):
-    """Sinh WordCloud tiếng Việt và lưu file PNG."""
+    """Generate Vietnamese WordCloud and save as PNG."""
     from wordcloud import WordCloud
     import matplotlib
     matplotlib.use("Agg")
@@ -268,7 +272,7 @@ def generate_wordcloud(all_tokens: list[str], output_filename: str = "wordcloud_
 
 
 def generate_sentiment_trend(messages: list[dict], output_filename: str = "sentiment_trend.png"):
-    """Vẽ biểu đồ xu hướng cảm xúc theo ngày."""
+    """Generate daily sentiment trend chart."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -297,13 +301,13 @@ def generate_sentiment_trend(messages: list[dict], output_filename: str = "senti
         neu_pcts.append(daily[day].get("neutral", 0) / total * 100)
 
     plt.figure(figsize=(14, 6))
-    plt.plot(sorted_days, pos_pcts, label="Tích cực", color="#10b981", linewidth=2)
-    plt.plot(sorted_days, neg_pcts, label="Tiêu cực", color="#ef4444", linewidth=2)
-    plt.plot(sorted_days, neu_pcts, label="Trung tính", color="#6366f1", linewidth=2, linestyle="--")
+    plt.plot(sorted_days, pos_pcts, label="Positive", color="#10b981", linewidth=2)
+    plt.plot(sorted_days, neg_pcts, label="Negative", color="#ef4444", linewidth=2)
+    plt.plot(sorted_days, neu_pcts, label="Neutral", color="#6366f1", linewidth=2, linestyle="--")
 
-    plt.xlabel("Ngày")
-    plt.ylabel("Tỷ lệ (%)")
-    plt.title("Xu hướng cảm xúc tin nhắn theo ngày")
+    plt.xlabel("Date")
+    plt.ylabel("Percentage (%)")
+    plt.title("Daily Message Sentiment Trend")
     plt.legend()
     step = max(1, len(sorted_days) // 15)
     plt.xticks(
@@ -326,9 +330,9 @@ def generate_sentiment_trend(messages: list[dict], output_filename: str = "senti
 def main():
     parser = argparse.ArgumentParser(description="NLP Analytics Pipeline — Phase 4")
     parser.add_argument("--offline", action="store_true",
-                        help="Chạy offline với mock data (không cần ScyllaDB)")
+                        help="Run offline with mock data (no ScyllaDB required)")
     parser.add_argument("--count", type=int, default=20000,
-                        help="Số lượng mock messages khi chạy offline (default: 20000)")
+                        help="Number of mock messages when running offline (default: 20000)")
     args = parser.parse_args()
 
     cluster = None
@@ -391,10 +395,10 @@ def main():
     sentiments = Counter(m["sentiment"] for m in messages)
     total = len(messages)
     logging.info("=" * 50)
-    logging.info("  NLP ANALYTICS PIPELINE — KẾT QUẢ TỔNG HỢP")
+    logging.info("  NLP ANALYTICS PIPELINE — RESULTS SUMMARY")
     logging.info("=" * 50)
-    logging.info(f"  Tổng tin nhắn phân tích : {total:>8,}")
-    logging.info(f"  Tổng tokens trích xuất  : {len(all_tokens):>8,}")
+    logging.info(f"  Total messages analyzed : {total:>8,}")
+    logging.info(f"  Total tokens extracted  : {len(all_tokens):>8,}")
     for label in ["positive", "negative", "neutral"]:
         cnt = sentiments.get(label, 0)
         pct = cnt / total * 100 if total else 0
@@ -414,4 +418,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

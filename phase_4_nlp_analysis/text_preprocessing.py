@@ -1,3 +1,9 @@
+"""
+Text Preprocessing — Phase 4
+Standalone script for testing Vietnamese text cleaning with ScyllaDB data.
+Demonstrates emoticon preservation, URL removal, stopword filtering,
+and Vietnamese word segmentation via underthesea.
+"""
 import os
 import sys
 import re
@@ -29,6 +35,7 @@ PUNCT_PATTERN = re.compile(r'[^\w\s]', flags=re.UNICODE)
 SPACES_PATTERN = re.compile(r'\s+')
 
 def clean_text(text):
+    """Clean and tokenize Vietnamese text, preserving emoticons."""
     if not text:
         return ""
 
@@ -43,24 +50,25 @@ def clean_text(text):
     text = SPACES_PATTERN.sub(' ', text).strip()
 
     tokens = word_tokenize(text, format="list")
-    
+
     cleaned_tokens = []
     for t in tokens:
         if t.startswith("EMO_"):
             cleaned_tokens.append(t)
         elif t.lower() not in ALL_STOPWORDS and len(t) > 1:
             cleaned_tokens.append(t)
-    
+
     final_text = " ".join(cleaned_tokens)
 
+    # Restore original emoticons
     for i, emo in enumerate(emoticons_found):
         final_text = final_text.replace(f"EMO_{i}", emo)
-        
+
     return final_text
 
 def main():
     logging.info(f"Connecting to ScyllaDB at {SCYLLA_HOST}:{SCYLLA_PORT}...")
-    
+
     try:
         cluster = Cluster([SCYLLA_HOST], port=SCYLLA_PORT)
         session = cluster.connect('chat_system_target')
@@ -83,7 +91,7 @@ def main():
         "Alo alo 123... có ai hỗ trợ mình với =((((",
         "Check inbox đi bạn, mình đã thanh toán xong rồi nha.",
     ]
-    
+
     print("--- Edge cases ---")
     for text in edge_cases:
         print(f"RAW: {text}")
