@@ -236,10 +236,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const kaggleContainer = document.getElementById('kaggle-results-container');
 
     kaggleBtn.addEventListener('click', async () => {
-        const slug = kaggleSlug.value.trim();
+        let slug = kaggleSlug.value.trim();
         if (!slug) {
             alert('Please enter a valid Kaggle Dataset Slug (e.g., kazanova/sentiment140)');
             return;
+        }
+
+        // Automatically extract slug if user pastes a full URL
+        try {
+            if (slug.includes('kaggle.com/datasets/')) {
+                const urlObj = new URL(slug);
+                const pathParts = urlObj.pathname.split('/').filter(Boolean);
+                if (pathParts.length >= 3 && pathParts[0] === 'datasets') {
+                    slug = `${pathParts[1]}/${pathParts[2]}`;
+                }
+            } else if (slug.startsWith('https://') || slug.startsWith('http://')) {
+                alert('Please provide a valid Kaggle dataset URL or just the slug.');
+                return;
+            }
+        } catch (e) {
+            // Ignore URL parse errors and fall back to whatever they entered
         }
 
         kaggleBtn.innerText = 'Analyzing...';
@@ -254,7 +270,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res = await fetch(url);
-            const data = await res.json();
+            const text = await res.text();
+            
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (err) {
+                throw new Error(res.ok ? "Invalid JSON from server" : `Server Error: ${res.status}. ${text.slice(0, 100)}`);
+            }
 
             if (!res.ok) {
                 throw new Error(data.detail || 'Analysis failed');

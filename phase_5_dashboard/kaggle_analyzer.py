@@ -7,8 +7,9 @@ from fastapi import HTTPException
 
 # Ensure kaggle is installed
 try:
+    # If credentials are not set, importing kaggle might raise OSError or ValueError
     import kaggle
-except ImportError:
+except Exception:
     kaggle = None
 
 def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
@@ -17,7 +18,7 @@ def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
     dataset_slug: e.g., 'kazanova/sentiment140'
     """
     if not kaggle:
-        raise HTTPException(status_code=500, detail="Kaggle library not installed.")
+        raise HTTPException(status_code=500, detail="Kaggle library not installed or failed to initialize (missing/invalid credentials).")
 
     # Check for credentials
     if not os.environ.get('KAGGLE_USERNAME') or not os.environ.get('KAGGLE_KEY'):
