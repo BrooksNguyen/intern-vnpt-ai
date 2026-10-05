@@ -33,14 +33,14 @@ def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
 
     try:
         # Download and unzip
-        kaggle.api.dataset_download_cli(dataset_slug, path=download_path, unzip=True)
+        kaggle.api.dataset_download_files(dataset_slug, path=download_path, unzip=True)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to download dataset: {str(e)}")
 
     # Find CSV
     csv_files = glob.glob(f"{download_path}/*.csv")
     if not csv_files:
-        raise HTTPException(status_code=400, detail="No CSV files found in the dataset.")
+        raise HTTPException(status_code=400, detail="No CSV files found in the downloaded dataset.")
     
     target_csv = csv_files[0]
     
