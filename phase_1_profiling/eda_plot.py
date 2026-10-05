@@ -1,3 +1,8 @@
+"""
+EDA Plot — Phase 1
+Reads data from Cassandra via PySpark and generates
+a room distribution chart for Hot Partition analysis.
+"""
 import os
 import sys
 import logging
@@ -34,7 +39,7 @@ try:
     import matplotlib.pyplot as plt
     plt.figure(figsize=(10, 6))
     plt.bar(room_counts["room_id"], room_counts["cnt"], color='salmon')
-    plt.title("Top 10 Room theo tin nhan")
+    plt.title("Top 10 Rooms by Message Count")
     plt.xlabel("Room ID")
     plt.ylabel("Messages")
     plt.xticks(rotation=45)
@@ -42,11 +47,11 @@ try:
     plt.tight_layout()
 
     from pathlib import Path
-    
-    # Dùng Path tương đối dựa theo vị trí file script đang chạy
+
+    # Use relative path based on script location
     OUTPUT_DIR = Path(__file__).resolve().parent
     output_path = OUTPUT_DIR / "room_distribution.png"
-    
+
     plt.savefig(str(output_path))
     logging.info(f"Saved successfully to: {output_path}")
 
