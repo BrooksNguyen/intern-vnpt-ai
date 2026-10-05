@@ -1,40 +1,81 @@
+"""
+FastAPI Backend — Phase 5
+Web service API supporting Backtracking Pagination
+to query chat data from ScyllaDB.
+
+Run: uvicorn phase_5_dashboard.api:app --reload --host 0.0.0.0 --port 8000
+"""
 import os
 import uvicorn
 from typing import Optional
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Query, HTTPException
-from phase_5_dashboard.backend_service import ChatBackendService
+from fastapi.middleware.cors import CORSMiddleware
+from backend_service import ChatBackendService
 
-app = FastAPI(title="ScyllaDB Chat API", version="1.0.0")
-
-# Khởi tạo kết nối db
+# ---------------------------------------------------------------------------
+# Lifespan (replaces deprecated on_event)
+# ---------------------------------------------------------------------------
 db_service = ChatBackendService()
 
-@app.on_event("startup")
-def startup_event():
-    db_service.connect()
 
-@app.on_event("shutdown")
-def shutdown_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Connect to DB on startup, close on shutdown."""
+    db_service.connect()
+    yield
     db_service.close()
 
+
+app = FastAPI(
+    title="ScyllaDB Chat API",
+    version="1.0.0",
+    description="API to query chat messages from ScyllaDB with Backtracking Pagination support",
+    lifespan=lifespan,
+)
+
+# CORS configuration to allow Streamlit dashboard access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
 @app.get("/")
 def read_root():
-    return {"message": "ScyllaDB Chat API is running"}
+    return {"message": "ScyllaDB Chat API is running", "version": "1.0.0"}
+
+
+@app.get("/health")
+def health_check():
+    """Check database connection status."""
+    connected = db_service.session is not None
+    return {"status": "healthy" if connected else "unhealthy", "database": "ScyllaDB"}
+
 
 @app.get("/messages")
 def get_messages(
-    room_id: str = Query(..., description="ID của phòng chat"),
-    limit: int = Query(50, description="Số lượng tin nhắn tối đa"),
-    state: Optional[str] = Query(None, description="Token phân trang (có thể là paging_state gốc hoặc bucket_id)")
+    room_id: str = Query(..., description="Chat Room ID"),
+    limit: int = Query(50, ge=1, le=500, description="Maximum number of messages"),
+    state: Optional[str] = Query(None, description="Pagination token (bucket_id format YYYY-MM)")
 ):
     """
-    API lấy danh sách tin nhắn có hỗ trợ phân trang lùi bucket.
+    API to fetch messages supporting bucket backtracking pagination.
+
+    - If `state` is not provided: automatically backtracks from the current month
+    - If `state` is provided (e.g., `2026-09`): queries that specific bucket directly
     """
     try:
-        # Nếu có state (bucket_id) thì truy vấn trực tiếp bucket đó
-        if state and "-" in state:  # Định dạng YYYY-MM
+        if state and "-" in state:
+            # Query specific bucket directly
             messages = db_service.query_bucket(room_id, state, limit)
-            # Logic đơn giản: token tiếp theo là tháng trước đó (chỉ mô phỏng)
+            # Next token: previous month
             year, month = map(int, state.split("-"))
             month -= 1
             if month == 0:
@@ -42,24 +83,45 @@ def get_messages(
                 year -= 1
             next_state = f"{year:04d}-{month:02d}"
         else:
-            # Nếu không truyền state, chạy thuật toán backtracking tự động tìm tin nhắn mới nhất
+            # Backtracking pagination from current month
             messages = db_service.get_messages(room_id, limit=limit)
-            
-            # Gán state tiếp theo dựa trên timestamp của tin nhắn cuối cùng (nếu có)
             next_state = None
             if messages:
                 last_msg = messages[-1]
                 if last_msg["timestamp"]:
                     next_state = last_msg["timestamp"].strftime("%Y-%m")
-        
+
         return {
             "room_id": room_id,
             "data": messages,
+            "count": len(messages),
             "paging_state": next_state,
-            "limit": limit
+            "limit": limit,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/rooms")
+def get_rooms():
+    """Get list of all available room_ids in the system."""
+    try:
+        rooms = db_service.get_available_rooms()
+        return {"rooms": rooms, "count": len(rooms)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/stats")
+def get_stats():
+    """Get statistics of message count per room."""
+    try:
+        stats = db_service.get_room_stats()
+        total = sum(s["message_count"] for s in stats)
+        return {"stats": stats, "total_messages": total, "total_rooms": len(stats)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)

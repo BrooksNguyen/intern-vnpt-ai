@@ -1,7 +1,7 @@
 """
 Backend Service — Phase 5
-Mô phỏng backend truy vấn tin nhắn với thuật toán
-phân trang lùi bucket tháng (Cross-Bucket Backtracking Pagination).
+Simulates a chat backend service, querying ScyllaDB with
+Cross-Bucket Backtracking Pagination algorithm.
 """
 import os
 import sys
@@ -17,7 +17,7 @@ SCYLLA_PORT = int(os.getenv("SCYLLA_PORT", 9043))
 
 
 class ChatBackendService:
-    """Service lớp mô phỏng backend chat, truy vấn ScyllaDB."""
+    """Service class simulating chat backend, querying ScyllaDB."""
 
     def __init__(self, host: str = SCYLLA_HOST, port: int = SCYLLA_PORT):
         self.host = host
@@ -26,7 +26,7 @@ class ChatBackendService:
         self.session = None
 
     def connect(self):
-        """Kết nối tới ScyllaDB cluster."""
+        """Connect to ScyllaDB cluster."""
         logging.info(f"Connecting to ScyllaDB at {self.host}:{self.port}...")
         try:
             self.cluster = Cluster([self.host], port=self.port)
@@ -37,20 +37,20 @@ class ChatBackendService:
             sys.exit(1)
 
     def close(self):
-        """Đóng kết nối an toàn."""
+        """Close connection safely."""
         if self.cluster:
             self.cluster.shutdown()
             logging.info("Connection closed.")
 
     def query_bucket(self, room_id: str, bucket_id: str, limit: int = 50) -> list[dict]:
         """
-        Truy vấn tin nhắn từ một bucket cụ thể.
+        Query messages from a specific bucket.
         Args:
-            room_id: ID phòng chat
-            bucket_id: Bucket tháng (format 'YYYY-MM')
-            limit: Số lượng tin nhắn tối đa
+            room_id: Chat room ID
+            bucket_id: Month bucket (format 'YYYY-MM')
+            limit: Maximum number of messages
         Returns:
-            list[dict]: Danh sách tin nhắn
+            list[dict]: List of messages
         """
         query = """
             SELECT room_id, bucket_id, message_id, user_id, content,
@@ -77,17 +77,17 @@ class ChatBackendService:
 
     def get_messages(self, room_id: str, limit: int = 50, max_backtrack_months: int = 6) -> list[dict]:
         """
-        Lấy tin nhắn với thuật toán Backtracking Pagination.
+        Retrieve messages using Backtracking Pagination algorithm.
 
-        Nếu bucket tháng hiện tại không đủ tin nhắn, tự động lùi về
-        các tháng trước cho đến khi đủ `limit` hoặc hết `max_backtrack_months`.
+        If the current month's bucket does not have enough messages, it automatically
+        backtracks to previous months until it reaches the `limit` or `max_backtrack_months`.
 
         Args:
-            room_id: ID phòng chat
-            limit: Số lượng tin nhắn cần lấy (default: 50)
-            max_backtrack_months: Số tháng tối đa được lùi (chặn vòng lặp vô hạn)
+            room_id: Chat room ID
+            limit: Number of messages needed (default: 50)
+            max_backtrack_months: Maximum months to backtrack (prevent infinite loop)
         Returns:
-            list[dict]: Danh sách tin nhắn (tối đa `limit` bản ghi, không trùng lặp)
+            list[dict]: List of messages (up to `limit` records)
         """
         results = []
         curr_year, curr_month = datetime.now().year, datetime.now().month
@@ -101,7 +101,7 @@ class ChatBackendService:
             msgs = self.query_bucket(room_id, bucket_id, limit=needed)
             results.extend(msgs)
 
-            # Lùi về tháng trước nếu chưa đủ tin nhắn
+            # Backtrack to previous month if not enough messages
             curr_month -= 1
             if curr_month == 0:
                 curr_month = 12
@@ -115,7 +115,7 @@ class ChatBackendService:
         return results
 
     def get_available_rooms(self) -> list[str]:
-        """Lấy danh sách các room_id có trong hệ thống."""
+        """Get list of available room_ids in the system."""
         rows = self.session.execute(
             "SELECT DISTINCT room_id FROM chat_table_bucketed;"
         )
@@ -123,7 +123,7 @@ class ChatBackendService:
         return rooms
 
     def get_room_stats(self) -> list[dict]:
-        """Lấy thống kê số lượng tin nhắn theo room."""
+        """Get statistics of message count per room."""
         rows = self.session.execute(
             "SELECT room_id, bucket_id FROM chat_table_bucketed;"
         )
@@ -144,7 +144,7 @@ def main():
     service = ChatBackendService()
     service.connect()
 
-    # Demo: lấy 50 tin mới nhất của room_999
+    # Demo: fetch 50 newest messages from room_999
     messages = service.get_messages("room_999", limit=50)
     print(f"\n{'='*60}")
     print(f"  Fetched {len(messages)} messages from room_999")
@@ -156,7 +156,7 @@ def main():
     if len(messages) > 5:
         print(f"  ... and {len(messages) - 5} more messages")
 
-    # Demo: danh sách rooms
+    # Demo: list of rooms
     rooms = service.get_available_rooms()
     print(f"\nAvailable rooms ({len(rooms)}): {rooms[:10]}...")
 
