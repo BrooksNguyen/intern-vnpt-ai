@@ -1,14 +1,14 @@
 {
   "version": 2,
   "functions": {
-    "api/[...path].py": {
+    "api/index.py": {
       "includeFiles": "phase_5_dashboard/**"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/[...path].py"
+      "destination": "/api/index.py"
     },
     {
       "source": "/(.*)",
