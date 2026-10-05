@@ -1,2 +1,13 @@
+[project]
+name = "intern-vnpt-ai"
+version = "0.1.0"
+description = "FastAPI Backend for ScyllaDB"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "cassandra-driver"
+]
+
 [tool.vercel]
 entrypoint = "phase_5_dashboard.api:app"
