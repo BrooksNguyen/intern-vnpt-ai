@@ -320,52 +320,90 @@ document.addEventListener('DOMContentLoaded', () => {
 
             kaggleContainer.style.opacity = '1';
             
-            // Build Results UI
-            let keywordsHtml = '';
-            if (data.top_keywords) {
-                keywordsHtml = data.top_keywords.map(kw => 
-                    `<span style="background:var(--bg-light); padding:4px 8px; border-radius:4px; margin-right:8px; display:inline-block; margin-bottom:8px; border:1px solid var(--border-color);">
-                        ${kw.word} <strong style="color:var(--vnpt-blue-main)">${kw.count}</strong>
-                    </span>`
-                ).join('');
-            }
+            // Check if mock data
+            const isMock = data.csv_analyzed === "mock_data.csv";
+            const warningHtml = isMock ? `
+                <div style="background: rgba(255, 59, 48, 0.1); border: 1px solid #FF3B30; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: flex-start;">
+                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="#FF3B30" stroke-width="2" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    <div>
+                        <strong style="color: #FF3B30; display: block; margin-bottom: 0.25rem;">Mock Data Triggered (Kaggle Auth Missing)</strong>
+                        <p style="color: #666; font-size: 0.9rem; margin: 0;">To analyze real datasets, you must provide your <code style="background:#eee;padding:2px 4px;border-radius:4px;">KAGGLE_USERNAME</code> and <code style="background:#eee;padding:2px 4px;border-radius:4px;">KAGGLE_KEY</code> as Environment Variables in your Render Dashboard.</p>
+                    </div>
+                </div>
+            ` : '';
 
+            // Build Results UI
             kaggleContainer.innerHTML = `
                 <div style="animation: fade-in 0.4s ease forwards; width:100%">
-                    <h3 style="color:var(--vnpt-blue-dark); margin-bottom:1.5rem; display:flex; justify-content:space-between;">
+                    <h3 style="color:var(--vnpt-blue-dark); margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
                         Dataset: ${data.dataset}
-                        <span style="font-size:0.8rem; background:rgba(0,180,216,0.1); color:var(--vnpt-blue-main); padding:4px 12px; border-radius:20px; display:flex; align-items:center;">Analysis Complete</span>
+                        <span style="font-size:0.8rem; background:rgba(0,180,216,0.1); color:var(--vnpt-blue-main); padding:4px 12px; border-radius:20px;">Analysis Complete</span>
                     </h3>
                     
+                    ${warningHtml}
+                    
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
-                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
                             <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:0.5rem">CSV File Analyzed</div>
-                            <div style="font-size:1.1rem; font-weight:600">${data.csv_analyzed}</div>
+                            <div style="font-size:1.1rem; font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${data.csv_analyzed}</div>
                         </div>
-                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
                             <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:0.5rem">Target Column</div>
-                            <div style="font-size:1.1rem; font-weight:600">${data.column_analyzed}</div>
+                            <div style="font-size:1.1rem; font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${data.column_analyzed}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color); display:flex; flex-direction:column; align-items:center;">
+                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:1rem; align-self:flex-start;">Sentiment Distribution</div>
+                            <div style="position: relative; width: 100%; max-width: 250px; aspect-ratio: 1;">
+                                <canvas id="sentimentChart"></canvas>
+                            </div>
                         </div>
                         <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
-                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:0.5rem">Sample Size</div>
-                            <div style="font-size:1.1rem; font-weight:600">${data.total_rows_sampled.toLocaleString()} Rows</div>
-                        </div>
-                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
-                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:0.5rem">Sentiment Dist.</div>
-                            <div style="font-size:1rem; font-weight:600;">
-                                <span style="color:#34C759">Pos: ${data.sentiment_distribution.positive}</span> | 
-                                <span style="color:#FF3B30">Neg: ${data.sentiment_distribution.negative}</span> | 
-                                <span style="color:#8E8E93">Neu: ${data.sentiment_distribution.neutral}</span>
+                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:1rem;">Top Extracted Keywords</div>
+                            <div style="position: relative; width: 100%; height: 250px;">
+                                <canvas id="keywordsChart"></canvas>
                             </div>
                         </div>
                     </div>
-                    
-                    <div>
-                        <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:1rem">Top Extracted Keywords</div>
-                        <div>${keywordsHtml || 'No significant keywords extracted.'}</div>
-                    </div>
                 </div>
             `;
+            
+            // Render Charts after DOM updates
+            setTimeout(() => {
+                const ctxSentiment = document.getElementById('sentimentChart').getContext('2d');
+                new Chart(ctxSentiment, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Positive', 'Negative', 'Neutral'],
+                        datasets: [{
+                            data: [data.sentiment_distribution.positive, data.sentiment_distribution.negative, data.sentiment_distribution.neutral],
+                            backgroundColor: ['#34C759', '#FF3B30', '#8E8E93'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+
+                const ctxKeywords = document.getElementById('keywordsChart').getContext('2d');
+                const labels = data.top_keywords.map(k => k.word);
+                const counts = data.top_keywords.map(k => k.count);
+                new Chart(ctxKeywords, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Word Frequency',
+                            data: counts,
+                            backgroundColor: 'rgba(0, 91, 170, 0.8)',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+            }, 50);
+
         } catch (error) {
             kaggleContainer.style.opacity = '1';
             kaggleContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>Error: ${error.message}</p></div>`;
