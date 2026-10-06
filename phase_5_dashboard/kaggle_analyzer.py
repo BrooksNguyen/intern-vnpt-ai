@@ -74,7 +74,8 @@ def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
             str_cols = df.select_dtypes(include=['object']).columns
             num_cols = df.select_dtypes(include=['number']).columns
             if len(str_cols) > 0:
-                col = str_cols[0]
+                # Pick the string column with the longest average length (best for NLP)
+                col = max(str_cols, key=lambda c: df[c].astype(str).str.len().mean())
             elif len(num_cols) > 0:
                 col = num_cols[0]
             else:
