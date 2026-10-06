@@ -236,50 +236,23 @@
                 <!-- Results Section -->
                 <div id="kaggle-results-container" style="display: none;">
                     
-                    <!-- 4-Card Metric Strip -->
-                    <div class="kpi-strip">
-                        <div class="metric-card small">
-                            <div class="metric-label">File Name</div>
-                            <div class="metric-value-text" id="kpi-file">--</div>
-                        </div>
-                        <div class="metric-card small">
-                            <div class="metric-label">Dimensions</div>
-                            <div class="metric-value-text" id="kpi-dim">--</div>
-                        </div>
-                        <div class="metric-card small">
-                            <div class="metric-label">Target Column</div>
-                            <div class="metric-value-text" id="kpi-col">--</div>
-                        </div>
-                        <div class="metric-card small">
-                            <div class="metric-label">Data Health (Missing)</div>
-                            <div class="metric-value-text" id="kpi-health">--</div>
-                        </div>
-                    </div>
+                    <!-- Dynamic KPI Strip -->
+                    <div id="kaggle-kpi-strip" class="kpi-strip"></div>
 
-                    <!-- Adaptive Charts Grid -->
-                    <div class="charts-grid" style="margin-top:2rem;">
-                        <div class="chart-card">
-                            <h4 id="kaggle-chart1-title">Distribution</h4>
-                            <div class="chart-wrapper">
-                                <canvas id="kaggleChart1"></canvas>
-                            </div>
-                        </div>
-                        <div class="chart-card">
-                            <h4 id="kaggle-chart2-title">Insights</h4>
-                            <div class="chart-wrapper">
-                                <canvas id="kaggleChart2"></canvas>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Column Profile Summary Table -->
+                    <div id="kaggle-column-table" style="margin-top: 1.5rem; overflow-x: auto;"></div>
+
+                    <!-- Dynamic Charts Grid (2-4 charts, rendered by AI or fallback) -->
+                    <div id="kaggle-charts-grid" class="charts-grid" style="margin-top:2rem;"></div>
                     
-                    <!-- AI Insights Feedback Card -->
+                    <!-- AI Insights Narrative Card -->
                     <div id="kaggle-ai-feedback" style="margin-top: 2rem; background: linear-gradient(145deg, rgba(15, 23, 42, 0.6), rgba(30, 41, 59, 0.8)); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); display: none; opacity: 0; transition: opacity 0.5s ease;">
                         <h4 style="color: #38bdf8; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                            Gemini AI Data Analyst
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4z"></path></svg>
+                            <span id="ai-card-title">Gemini AI Data Analyst</span>
                         </h4>
-                        <div id="kaggle-ai-content" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; white-space: pre-line;">
-                            <div style="display:flex; align-items:center; gap: 0.5rem;"><div class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></div> Analyzing patterns...</div>
+                        <div id="kaggle-ai-content" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.8; white-space: pre-line;">
+                            <div style="display:flex; align-items:center; gap: 0.5rem;"><div class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></div> Analyzing patterns with AI...</div>
                         </div>
                     </div>
                 </div>

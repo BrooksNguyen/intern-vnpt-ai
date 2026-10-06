@@ -8,6 +8,7 @@ dependencies = [
     "uvicorn",
     "cassandra-driver",
     "pandas",
+    "numpy",
     "kaggle"
 ]
 
