@@ -355,9 +355,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res = await fetch(url);
-            const text = await res.text();
+            
+            // Check if the response is actually JSON
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await res.text();
+                console.error("Non-JSON response:", text.slice(0, 500));
+                
+                // If it's an HTML page, it might be Render spinning up or Vercel 404
+                if (text.includes("<!DOCTYPE html>") || text.includes("<html")) {
+                    if (res.status === 502 || res.status === 503 || text.includes("Render")) {
+                        throw new Error("Backend server is starting up from sleep (Cold Start). Please wait 30-60 seconds and try again.");
+                    }
+                    throw new Error(`Backend Error (HTML returned instead of JSON). Status: ${res.status}. Check Vercel/Render connection.`);
+                }
+                throw new Error(`Server returned unexpected format (Status ${res.status})`);
+            }
+
             let data;
-            try { data = JSON.parse(text); } catch (err) { throw new Error(`Invalid JSON: ${text.slice(0, 100)}`); }
+            try { data = await res.json(); } catch (err) { throw new Error(`Failed to parse JSON response`); }
             if (!res.ok) throw new Error(data.detail || 'Analysis failed');
 
             if (data.error && data.error !== 'None') {
