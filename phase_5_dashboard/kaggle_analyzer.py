@@ -126,6 +126,8 @@ def _profile_datetime(series: pd.Series) -> dict:
 
 def _classify_column(series: pd.Series) -> str:
     """Decide whether a column is numeric, categorical, text, or datetime."""
+    if pd.api.types.is_bool_dtype(series):
+        return "categorical"
     if pd.api.types.is_numeric_dtype(series):
         return "numeric"
 
@@ -241,7 +243,7 @@ def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
         columns_profile[str(col)] = profile
 
     # Correlation matrix (numeric cols only)
-    num_cols = df.select_dtypes(include=['number']).columns.tolist()
+    num_cols = df.select_dtypes(include=['number']).select_dtypes(exclude=['bool', 'boolean']).columns.tolist()
     correlation = None
     if len(num_cols) >= 2:
         corr_df = df[num_cols].corr()
