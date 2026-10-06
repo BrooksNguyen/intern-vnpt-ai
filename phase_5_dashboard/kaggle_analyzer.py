@@ -40,7 +40,9 @@ def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
         except Exception as e:
             raise ValueError(f"Kaggle API Authentication Failed: {str(e)}")
 
-        download_path = "/tmp/kaggle_data"
+        # Ensure a clean, unique extraction path per dataset to prevent cross-contamination
+        safe_slug = dataset_slug.replace('/', '_').replace('\\', '_')
+        download_path = f"/tmp/kaggle_data/{safe_slug}"
         os.makedirs(download_path, exist_ok=True)
         
         # Download and unzip
