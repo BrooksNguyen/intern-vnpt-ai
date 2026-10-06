@@ -425,3 +425,4 @@ document.addEventListener('DOMContentLoaded', () => {
             kaggleBtn.innerText = 'Analyze'; kaggleBtn.disabled = false;
         }
     });
+});
