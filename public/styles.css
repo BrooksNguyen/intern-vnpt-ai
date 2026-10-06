@@ -1,25 +1,25 @@
 :root {
-    /* VNPT AI Color Palette - Dark Mode Optimized */
-    --vnpt-blue-dark: #004899;
-    --vnpt-blue-main: #0ea5e9;
-    --vnpt-blue-light: #38bdf8;
-    --vnpt-cyan: #22d3ee;
+    /* VNPT AI Color Palette - Light Theme */
+    --vnpt-blue-dark: #003d7c;
+    --vnpt-blue-main: #005aa9;
+    --vnpt-blue-light: #0081f2;
+    --vnpt-cyan: #00c3ff;
     
     /* Neutral & Backgrounds */
-    --bg-body: #0f172a; /* Slate 900 */
-    --bg-surface: #1e293b; /* Slate 800 */
-    --bg-light: #334155; /* Slate 700 */
+    --bg-body: #f4f7f9; /* Soft tech light gray */
+    --bg-surface: #ffffff; /* Pure white */
+    --bg-light: #e2e8f0; 
     
     /* Text Colors */
-    --text-heading: #f8fafc; /* Slate 50 */
-    --text-body: #cbd5e1; /* Slate 300 */
-    --text-muted: #94a3b8; /* Slate 400 */
+    --text-heading: #0f172a; 
+    --text-body: #334155; 
+    --text-muted: #64748b; 
     
     /* Borders & Shadows */
-    --border-color: #334155;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -1px rgba(0,0,0,0.2);
-    --shadow-hover: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.2);
+    --border-color: #cbd5e1;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-hover: 0 12px 20px rgba(0,0,0,0.12);
     
     --radius-sm: 6px;
     --radius-md: 8px;
@@ -83,7 +83,7 @@ h1, h2, h3, h4 { color: var(--text-heading); font-weight: 600; line-height: 1.2;
 .nav-brand {
     display: flex; align-items: center; gap: 0.8rem; cursor: pointer;
 }
-.nav-brand img { height: 28px; filter: brightness(0) invert(1); } /* Make logo white for dark mode */
+.nav-brand img { height: 28px; }
 .brand-text { font-weight: 700; color: var(--text-heading); font-size: 1.1rem; letter-spacing: 0.05em; text-transform: uppercase; }
 .nav-links { display: flex; align-items: center; gap: 1.5rem; }
 .github-link {
@@ -135,7 +135,7 @@ h1, h2, h3, h4 { color: var(--text-heading); font-weight: 600; line-height: 1.2;
     padding: 1.5rem; border-radius: var(--radius-sm); text-align: left;
     box-shadow: var(--shadow-sm); transition: var(--transition);
 }
-.tech-card:hover { border-color: var(--vnpt-blue-main); background: #26334a; }
+.tech-card:hover { border-color: var(--vnpt-blue-main); background: var(--bg-light); }
 .tech-card.highlight { border-left: 3px solid var(--vnpt-blue-light); }
 .tech-card h3 { font-size: 1.1rem; margin-bottom: 0.25rem; color: var(--text-heading); }
 .tech-card p { color: var(--text-muted); font-size: 0.85rem; }
@@ -186,8 +186,8 @@ h1, h2, h3, h4 { color: var(--text-heading); font-weight: 600; line-height: 1.2;
 }
 .deploy-text strong { display: block; margin-bottom: 0.5rem; color: var(--text-heading); font-size: 1rem; }
 .deploy-text code {
-    display: block; background: #0b1120; color: #38bdf8; padding: 0.75rem 1rem;
-    border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.85rem; border: 1px solid #1e293b;
+    display: block; background: var(--bg-light); color: var(--vnpt-blue-dark); padding: 0.75rem 1rem;
+    border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.85rem; border: 1px solid var(--border-color);
 }
 .deploy-text small { display: block; margin-top: 0.5rem; color: var(--text-muted); font-size: 0.8rem;}
 
@@ -233,7 +233,7 @@ footer { text-align: center; padding: 2rem; background: var(--bg-body); color: v
 }
 .chart-card h4 { font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 .img-container { width: 100%; height: 250px; display: flex; align-items: center; justify-content: center; }
-.img-container img { width: 100%; height: 100%; object-fit: contain; filter: invert(0.8) hue-rotate(180deg); }
+.img-container img { width: 100%; height: 100%; object-fit: contain; }
 
 /* Chat Explorer */
 .explorer-card {

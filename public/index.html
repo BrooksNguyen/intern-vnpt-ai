@@ -246,12 +246,12 @@
                     <div id="kaggle-charts-grid" class="charts-grid" style="margin-top:2rem;"></div>
                     
                     <!-- AI Insights Narrative Card -->
-                    <div id="kaggle-ai-feedback" style="margin-top: 2rem; background: linear-gradient(145deg, rgba(15, 23, 42, 0.6), rgba(30, 41, 59, 0.8)); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); display: none; opacity: 0; transition: opacity 0.5s ease;">
-                        <h4 style="color: #38bdf8; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                    <div id="kaggle-ai-feedback" style="margin-top: 2rem; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow-sm); display: none; opacity: 0; transition: opacity 0.5s ease;">
+                        <h4 style="color: var(--vnpt-blue-main); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
                             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4z"></path></svg>
                             <span id="ai-card-title">Gemini AI Data Analyst</span>
                         </h4>
-                        <div id="kaggle-ai-content" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.8; white-space: pre-line;">
+                        <div id="kaggle-ai-content" style="color: var(--text-body); font-size: 0.95rem; line-height: 1.8; white-space: pre-line;">
                             <div style="display:flex; align-items:center; gap: 0.5rem;"><div class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></div> Analyzing patterns with AI...</div>
                         </div>
                     </div>
@@ -288,52 +288,52 @@
 
                 <!-- 2. Pipeline Flow Diagram -->
                 <div class="chart-card" style="margin-bottom: 2rem; padding: 2rem; text-align:center;">
-                    <h4 style="margin-bottom: 2rem; color: #fff;">Data Pipeline Architecture</h4>
+                    <h4 style="margin-bottom: 2rem; color: var(--text-heading);">Data Pipeline Architecture</h4>
                     <div style="display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto; overflow-x: auto;">
                         
                         <!-- Source -->
-                        <div style="background: rgba(30,41,59,0.8); border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 8px; min-width: 130px;">
+                        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 1.5rem; border-radius: 8px; min-width: 130px;">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem">📥</div>
-                            <div style="font-weight: 600; font-size: 0.9rem; color:#f8fafc;">Kafka/Logs</div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color:var(--text-heading);">Kafka/Logs</div>
                             <div style="font-size: 0.75rem; color: #10b981; margin-top:0.5rem">● Active</div>
                         </div>
                         
                         <!-- Arrow -->
-                        <div style="color: rgba(255,255,255,0.3); font-size: 1.5rem; position:relative; min-width: 60px;">
+                        <div style="color: var(--border-color); font-size: 1.5rem; position:relative; min-width: 60px;">
                             <div style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); font-size:0.75rem; color:var(--text-muted); white-space:nowrap" id="flow-rate-1">450/s</div>
                             ⟶
                         </div>
 
                         <!-- ETL Engine -->
-                        <div style="background: rgba(30,41,59,0.8); border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 8px; min-width: 130px;">
+                        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 1.5rem; border-radius: 8px; min-width: 130px;">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem">⚡</div>
-                            <div style="font-weight: 600; font-size: 0.9rem; color:#f8fafc;">PySpark ETL</div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color:var(--text-heading);">PySpark ETL</div>
                             <div style="font-size: 0.75rem; color: #10b981; margin-top:0.5rem" id="flow-status-spark">● Processing</div>
                         </div>
                         
                         <!-- Arrow -->
-                        <div style="color: rgba(255,255,255,0.3); font-size: 1.5rem; position:relative; min-width: 60px;">
+                        <div style="color: var(--border-color); font-size: 1.5rem; position:relative; min-width: 60px;">
                             <div style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); font-size:0.75rem; color:var(--text-muted); white-space:nowrap" id="flow-rate-2">450/s</div>
                             ⟶
                         </div>
 
                         <!-- Storage -->
-                        <div style="background: rgba(30,41,59,0.8); border: 1px solid #38bdf8; padding: 1.5rem; border-radius: 8px; min-width: 130px; box-shadow: 0 0 15px rgba(56,189,248,0.2);">
+                        <div style="background: var(--bg-surface); border: 1px solid var(--vnpt-blue-light); padding: 1.5rem; border-radius: 8px; min-width: 130px; box-shadow: 0 0 15px rgba(0, 129, 242, 0.2);">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem">🗄️</div>
-                            <div style="font-weight: 600; font-size: 0.9rem; color:#f8fafc;">ScyllaDB</div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color:var(--text-heading);">ScyllaDB</div>
                             <div style="font-size: 0.75rem; color: #10b981; margin-top:0.5rem">● 3 Nodes</div>
                         </div>
                         
                         <!-- Arrow -->
-                        <div style="color: rgba(255,255,255,0.3); font-size: 1.5rem; position:relative; min-width: 60px;">
+                        <div style="color: var(--border-color); font-size: 1.5rem; position:relative; min-width: 60px;">
                             <div style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); font-size:0.75rem; color:var(--text-muted); white-space:nowrap" id="flow-rate-3">12/s</div>
                             ⟶
                         </div>
 
                         <!-- API -->
-                        <div style="background: rgba(30,41,59,0.8); border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 8px; min-width: 130px;">
+                        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); padding: 1.5rem; border-radius: 8px; min-width: 130px;">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem">🌐</div>
-                            <div style="font-weight: 600; font-size: 0.9rem; color:#f8fafc;">Serving API</div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color:var(--text-heading);">Serving API</div>
                             <div style="font-size: 0.75rem; color: #10b981; margin-top:0.5rem">● Healthy</div>
                         </div>
 
@@ -356,8 +356,8 @@
                     </div>
                 </div>
 
-                <!-- 4. Live Audit Logs -->
-                <div class="chart-card" style="background: #0f172a; padding: 0; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
+                <!-- 4. Live Audit Logs (Kept dark to mimic hacker terminal) -->
+                <div class="chart-card" style="background: #0f172a; padding: 0; border: 1px solid var(--border-color); overflow: hidden;">
                     <div style="padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.2);">
                         <h4 style="margin:0; color:#cbd5e1; font-size: 0.9rem;">Live Ingestion Logs</h4>
                         <div style="display:flex; gap:0.5rem">
