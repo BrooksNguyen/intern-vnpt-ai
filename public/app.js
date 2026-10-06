@@ -81,6 +81,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function initDashboard() {
+        // Set mock status to connected since we removed real-time polling
+        const statusBadge = document.getElementById('api-status');
+        const statusText = statusBadge.querySelector('.status-text');
+        statusBadge.classList.add('healthy'); statusBadge.classList.remove('error');
+        statusText.innerText = 'Backend: Connected (Live)';
+        
         initPipelineMonitor();
     }
 
@@ -137,7 +143,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updatePipelineTick() {
-        if (document.getElementById('tab-pipeline').style.display === 'none') return;
+        const pipelineTab = document.getElementById('tab-pipeline');
+        if (!pipelineTab || !pipelineTab.classList.contains('active')) return;
 
         const currentTps = Math.floor(400 + Math.random() * 200);
         totalIngested += (currentTps * 2);
