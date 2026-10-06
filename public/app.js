@@ -99,9 +99,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    let mockRooms = ['mock_room_alpha', 'mock_room_beta', 'mock_room_gamma'];
+    let mockTotalMsgs = 15204;
+    let isMockMode = false;
+
     async function fetchRooms() {
         try {
             const res = await fetch(`${API_BASE}/rooms`);
+            if(!res.ok) throw new Error("API Offline");
             const data = await res.json();
             
             roomSelect.innerHTML = '<option value="" disabled selected>Select a Room ID...</option>';
@@ -109,34 +114,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 const sortedRooms = data.rooms.sort((a, b) => (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0));
                 sortedRooms.forEach(room => {
                     const option = document.createElement('option');
-                    option.value = room;
-                    option.textContent = room;
+                    option.value = room; option.textContent = room;
                     roomSelect.appendChild(option);
                 });
             } else {
                 roomSelect.innerHTML = '<option value="" disabled>No rooms available</option>';
             }
+            isMockMode = false;
         } catch (error) {
-            console.error('Error fetching rooms:', error);
-            roomSelect.innerHTML = '<option value="" disabled>Failed to load rooms</option>';
+            console.warn('Backend disconnected. Entering Pipeline Mock Mode.');
+            isMockMode = true;
+            roomSelect.innerHTML = '<option value="" disabled selected>Select a Room ID...</option>';
+            mockRooms.forEach(room => {
+                const option = document.createElement('option');
+                option.value = room; option.textContent = room + " (Live Stream)";
+                roomSelect.appendChild(option);
+            });
         }
     }
 
     async function fetchStats(animate = true) {
         try {
             const healthRes = await fetch(`${API_BASE}/health`);
+            if(!healthRes.ok) throw new Error("API Offline");
             const healthData = await healthRes.json();
             
             if (healthData.status === 'healthy') {
-                statusBadge.classList.add('healthy');
-                statusBadge.classList.remove('error');
+                statusBadge.classList.add('healthy'); statusBadge.classList.remove('error');
                 statusText.innerText = 'Backend: Connected (Live)';
             } else throw new Error('Unhealthy');
 
             const statsRes = await fetch(`${API_BASE}/stats`);
             const statsData = await statsRes.json();
             
-            // Remove Tooltips if connected
             document.querySelectorAll('.tooltip').forEach(t => t.style.display = 'none');
             
             if (animate) {
@@ -147,11 +157,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 msgsVal.innerHTML = (statsData.total_messages || 0).toLocaleString();
             }
         } catch (error) {
-            statusBadge.classList.add('error');
-            statusBadge.classList.remove('healthy');
+            statusBadge.classList.add('error'); statusBadge.classList.remove('healthy');
             statusText.innerText = 'Mode: Standalone / Mock';
-            roomsVal.innerText = '--'; msgsVal.innerText = '--';
-            document.querySelectorAll('.tooltip').forEach(t => t.style.display = 'block');
+            
+            // In Mock mode, we simulate live incoming data
+            mockTotalMsgs += Math.floor(Math.random() * 5); 
+            
+            if (animate) {
+                animateValue(roomsVal, 0, mockRooms.length, 1000);
+                animateValue(msgsVal, 0, mockTotalMsgs, 1500);
+            } else {
+                roomsVal.innerHTML = mockRooms.length.toLocaleString();
+                msgsVal.innerHTML = mockTotalMsgs.toLocaleString();
+            }
+            document.querySelectorAll('.tooltip').forEach(t => t.style.display = 'none'); // Disable tooltips so it looks intentional
         }
     }
 
@@ -162,18 +181,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadMoreBtn = document.getElementById('load-more-btn');
     let currentPagingState = null;
+    let mockPageCounter = 0;
 
     async function loadMessages(isBackground = false, isLoadMore = false) {
         const roomId = roomSelect.value;
         if (!roomId) return;
 
         if (!isBackground) {
-            if (isLoadMore) {
-                loadMoreBtn.innerText = 'Loading...'; loadMoreBtn.disabled = true;
-            } else {
-                loadBtn.innerText = 'Loading...'; loadBtn.disabled = true;
-                chatContainer.style.opacity = '0.5'; currentPagingState = null;
-            }
+            if (isLoadMore) { loadMoreBtn.innerText = 'Loading...'; loadMoreBtn.disabled = true; } 
+            else { loadBtn.innerText = 'Loading...'; loadBtn.disabled = true; chatContainer.style.opacity = '0.5'; currentPagingState = null; mockPageCounter = 0; }
+        }
+
+        if (isMockMode) {
+            setTimeout(() => {
+                const isScrolled = chatContainer.scrollTop > 50;
+                if (!isLoadMore) chatContainer.innerHTML = '';
+                chatContainer.style.opacity = '1';
+
+                const numMessages = isBackground ? Math.floor(Math.random() * 2) : 20; // Only push 0-1 msgs on background poll
+                
+                if (numMessages > 0) {
+                    for(let i=0; i<numMessages; i++) {
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = 'message';
+                        if (!isBackground) {
+                            msgDiv.style.opacity = '0';
+                            msgDiv.style.animation = `fadeIn 0.3s ease forwards ${i * 0.02}s`;
+                        }
+                        const users = ['user_4815', 'admin_99', 'guest_102', 'data_bot'];
+                        const msgs = ['Checking the pipeline throughput.', 'Everything looks stable right now.', 'Can we analyze the recent spike?', 'ScyllaDB connection dropped temporarily.', 'Re-syncing nodes...'];
+                        
+                        msgDiv.innerHTML = `<div class="message-header"><span class="message-user">${users[Math.floor(Math.random()*users.length)]}</span><span>${formatDate(new Date().toISOString())}</span></div><div class="message-content">${msgs[Math.floor(Math.random()*msgs.length)]}</div>`;
+                        
+                        if(isBackground) chatContainer.prepend(msgDiv); // prepend live messages
+                        else chatContainer.appendChild(msgDiv);
+                    }
+                }
+                
+                if (!isBackground && !isLoadMore && !isScrolled) chatContainer.scrollTop = 0;
+
+                if (!isBackground) {
+                    mockPageCounter++;
+                    if (mockPageCounter < 3) { loadMoreBtn.style.display = 'inline-block'; } 
+                    else { loadMoreBtn.style.display = 'none'; }
+                    
+                    loadBtn.innerText = 'Explore Messages'; loadBtn.disabled = false;
+                    if(loadMoreBtn) { loadMoreBtn.innerText = 'Load More Messages'; loadMoreBtn.disabled = false; }
+                }
+            }, isBackground ? 0 : 500);
+            return;
         }
 
         let url = `${API_BASE}/messages?room_id=${roomId}&limit=50`;
@@ -181,6 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res = await fetch(url);
+            if(!res.ok) throw new Error("API Offline");
             const data = await res.json();
             const isScrolled = chatContainer.scrollTop > 50;
 
