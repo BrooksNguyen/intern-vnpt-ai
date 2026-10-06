@@ -219,7 +219,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact structure (no markdown, no
     if not api_key:
         return _fallback_charts(profile)
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={api_key}"
 
     req_body = {
         "contents": [{"parts": [{"text": prompt}]}],
