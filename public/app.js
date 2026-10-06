@@ -81,239 +81,118 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function initDashboard() {
-        await fetchStats();
-        await fetchRooms();
-        renderMockSentimentTrend();
-        
-        // Setup Real-Time Polling for Pipeline monitor
-        if (!pollInterval) {
-            pollInterval = setInterval(async () => {
-                const rtToggle = document.getElementById('realtime-toggle');
-                if (rtToggle && rtToggle.checked) {
-                    await fetchStats(false);
-                    if (roomSelect.value) {
-                        await loadMessages(true);
-                    }
-                }
-            }, 3000);
-        }
+        initPipelineMonitor();
     }
 
-    let mockRooms = ['mock_room_alpha', 'mock_room_beta', 'mock_room_gamma'];
-    let mockTotalMsgs = 15204;
-    let isMockMode = false;
+    // --- Pipeline Monitor Mock (Tab 2) ---
+    let pipeInterval;
+    let pipeThroughputChart, pipeLatencyChart;
+    const throughputData = Array(20).fill(400);
+    const latencyData = Array(10).fill(0).map((_, i) => ({ x: i*10, y: Math.random()*50 }));
+    let totalIngested = 1284920;
 
-    async function fetchRooms() {
-        try {
-            const res = await fetch(`${API_BASE}/rooms`);
-            if(!res.ok) throw new Error("API Offline");
-            const data = await res.json();
-            
-            roomSelect.innerHTML = '<option value="" disabled selected>Select a Room ID...</option>';
-            if (data.rooms && data.rooms.length > 0) {
-                const sortedRooms = data.rooms.sort((a, b) => (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0));
-                sortedRooms.forEach(room => {
-                    const option = document.createElement('option');
-                    option.value = room; option.textContent = room;
-                    roomSelect.appendChild(option);
-                });
-            } else {
-                roomSelect.innerHTML = '<option value="" disabled>No rooms available</option>';
-            }
-            isMockMode = false;
-        } catch (error) {
-            console.warn('Backend disconnected. Entering Pipeline Mock Mode.');
-            isMockMode = true;
-            roomSelect.innerHTML = '<option value="" disabled selected>Select a Room ID...</option>';
-            mockRooms.forEach(room => {
-                const option = document.createElement('option');
-                option.value = room; option.textContent = room + " (Live Stream)";
-                roomSelect.appendChild(option);
+    function initPipelineMonitor() {
+        // Initialize charts
+        const ctxT = document.getElementById('pipeThroughputChart');
+        if (ctxT) {
+            pipeThroughputChart = new Chart(ctxT.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: Array(20).fill(''),
+                    datasets: [{
+                        label: 'Messages/sec',
+                        data: throughputData,
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, color: '#94a3b8', scales: { x: { display: false }, y: { min: 200, max: 800, grid: { color: '#334155' } } }, plugins: { legend: { display: false } } }
             });
         }
-    }
 
-    async function fetchStats(animate = true) {
-        try {
-            const healthRes = await fetch(`${API_BASE}/health`);
-            if(!healthRes.ok) throw new Error("API Offline");
-            const healthData = await healthRes.json();
-            
-            if (healthData.status === 'healthy') {
-                statusBadge.classList.add('healthy'); statusBadge.classList.remove('error');
-                statusText.innerText = 'Backend: Connected (Live)';
-            } else throw new Error('Unhealthy');
-
-            const statsRes = await fetch(`${API_BASE}/stats`);
-            const statsData = await statsRes.json();
-            
-            document.querySelectorAll('.tooltip').forEach(t => t.style.display = 'none');
-            
-            if (animate) {
-                animateValue(roomsVal, 0, statsData.total_rooms || 0, 1000);
-                animateValue(msgsVal, 0, statsData.total_messages || 0, 1500);
-            } else {
-                roomsVal.innerHTML = (statsData.total_rooms || 0).toLocaleString();
-                msgsVal.innerHTML = (statsData.total_messages || 0).toLocaleString();
-            }
-        } catch (error) {
-            statusBadge.classList.add('error'); statusBadge.classList.remove('healthy');
-            statusText.innerText = 'Mode: Standalone / Mock';
-            
-            // In Mock mode, we simulate live incoming data
-            mockTotalMsgs += Math.floor(Math.random() * 5); 
-            
-            if (animate) {
-                animateValue(roomsVal, 0, mockRooms.length, 1000);
-                animateValue(msgsVal, 0, mockTotalMsgs, 1500);
-            } else {
-                roomsVal.innerHTML = mockRooms.length.toLocaleString();
-                msgsVal.innerHTML = mockTotalMsgs.toLocaleString();
-            }
-            document.querySelectorAll('.tooltip').forEach(t => t.style.display = 'none'); // Disable tooltips so it looks intentional
-        }
-    }
-
-    function formatDate(dateString) {
-        if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
-
-    const loadMoreBtn = document.getElementById('load-more-btn');
-    let currentPagingState = null;
-    let mockPageCounter = 0;
-
-    async function loadMessages(isBackground = false, isLoadMore = false) {
-        const roomId = roomSelect.value;
-        if (!roomId) return;
-
-        if (!isBackground) {
-            if (isLoadMore) { loadMoreBtn.innerText = 'Loading...'; loadMoreBtn.disabled = true; } 
-            else { loadBtn.innerText = 'Loading...'; loadBtn.disabled = true; chatContainer.style.opacity = '0.5'; currentPagingState = null; mockPageCounter = 0; }
+        const ctxL = document.getElementById('pipeLatencyChart');
+        if (ctxL) {
+            pipeLatencyChart = new Chart(ctxL.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: Array(10).fill('').map((_, i) => `${i*5}ms`),
+                    datasets: [{
+                        label: 'Requests',
+                        data: latencyData.map(d => d.y),
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, color: '#94a3b8', scales: { x: { grid: { display: false }, ticks: { color: '#94a3b8' } }, y: { display: false } }, plugins: { legend: { display: false } } }
+            });
         }
 
-        if (isMockMode) {
-            setTimeout(() => {
-                const isScrolled = chatContainer.scrollTop > 50;
-                if (!isLoadMore) chatContainer.innerHTML = '';
-                chatContainer.style.opacity = '1';
-
-                const numMessages = isBackground ? Math.floor(Math.random() * 2) : 20; // Only push 0-1 msgs on background poll
-                
-                if (numMessages > 0) {
-                    for(let i=0; i<numMessages; i++) {
-                        const msgDiv = document.createElement('div');
-                        msgDiv.className = 'message';
-                        if (!isBackground) {
-                            msgDiv.style.opacity = '0';
-                            msgDiv.style.animation = `fadeIn 0.3s ease forwards ${i * 0.02}s`;
-                        }
-                        const users = ['user_4815', 'admin_99', 'guest_102', 'data_bot'];
-                        const msgs = ['Checking the pipeline throughput.', 'Everything looks stable right now.', 'Can we analyze the recent spike?', 'ScyllaDB connection dropped temporarily.', 'Re-syncing nodes...'];
-                        
-                        msgDiv.innerHTML = `<div class="message-header"><span class="message-user">${users[Math.floor(Math.random()*users.length)]}</span><span>${formatDate(new Date().toISOString())}</span></div><div class="message-content">${msgs[Math.floor(Math.random()*msgs.length)]}</div>`;
-                        
-                        if(isBackground) chatContainer.prepend(msgDiv); // prepend live messages
-                        else chatContainer.appendChild(msgDiv);
-                    }
-                }
-                
-                if (!isBackground && !isLoadMore && !isScrolled) chatContainer.scrollTop = 0;
-
-                if (!isBackground) {
-                    mockPageCounter++;
-                    if (mockPageCounter < 3) { loadMoreBtn.style.display = 'inline-block'; } 
-                    else { loadMoreBtn.style.display = 'none'; }
-                    
-                    loadBtn.innerText = 'Explore Messages'; loadBtn.disabled = false;
-                    if(loadMoreBtn) { loadMoreBtn.innerText = 'Load More Messages'; loadMoreBtn.disabled = false; }
-                }
-            }, isBackground ? 0 : 500);
-            return;
-        }
-
-        let url = `${API_BASE}/messages?room_id=${roomId}&limit=50`;
-        if (isLoadMore && currentPagingState) url += `&state=${encodeURIComponent(currentPagingState)}`;
-
-        try {
-            const res = await fetch(url);
-            if(!res.ok) throw new Error("API Offline");
-            const data = await res.json();
-            const isScrolled = chatContainer.scrollTop > 50;
-
-            if (!isLoadMore) chatContainer.innerHTML = ''; 
-            chatContainer.style.opacity = '1';
-
-            if (data.data && data.data.length > 0) {
-                data.data.forEach((msg, index) => {
-                    const msgDiv = document.createElement('div');
-                    msgDiv.className = 'message';
-                    if (!isBackground) {
-                        msgDiv.style.opacity = '0';
-                        msgDiv.style.animation = `fadeIn 0.3s ease forwards ${index * 0.02}s`;
-                    }
-                    msgDiv.innerHTML = `<div class="message-header"><span class="message-user">${msg.user_id}</span><span>${formatDate(msg.timestamp)}</span></div><div class="message-content">${msg.content}</div>`;
-                    chatContainer.appendChild(msgDiv);
-                });
-                
-                if (!isBackground && !isLoadMore && !isScrolled) chatContainer.scrollTop = 0;
-                
-                currentPagingState = data.paging_state;
-                if (currentPagingState && !isBackground) loadMoreBtn.style.display = 'inline-block';
-                else loadMoreBtn.style.display = 'none';
-            } else {
-                if (!isLoadMore) chatContainer.innerHTML = `<div class="empty-state"><p>No messages found in this room.</p></div>`;
-                loadMoreBtn.style.display = 'none';
-            }
-        } catch (error) {
-            if (!isBackground) {
-                chatContainer.style.opacity = '1';
-                if (!isLoadMore) chatContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>API Connection Failed.</p></div>`;
-            }
-        } finally {
-            if (!isBackground) {
-                loadBtn.innerText = 'Explore Messages'; loadBtn.disabled = false;
-                if(loadMoreBtn) { loadMoreBtn.innerText = 'Load More Messages'; loadMoreBtn.disabled = false; }
-            }
-        }
+        // Start interval
+        if (pipeInterval) clearInterval(pipeInterval);
+        pipeInterval = setInterval(updatePipelineTick, 2000);
     }
 
-    if (loadBtn) loadBtn.addEventListener('click', () => loadMessages(false, false));
-    if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => loadMessages(false, true));
-    if (roomSelect) roomSelect.addEventListener('change', () => {
-        if (roomSelect.value) { loadBtn.disabled = false; loadMessages(false, false); }
-    });
+    function updatePipelineTick() {
+        if (document.getElementById('tab-pipeline').style.display === 'none') return;
 
-    // --- Moving Average & Chart Logic for Pipeline Tab ---
-    function renderMockSentimentTrend() {
-        const ctx = document.getElementById('sentimentTrendChart');
-        if(!ctx) return;
+        const currentTps = Math.floor(400 + Math.random() * 200);
+        totalIngested += (currentTps * 2);
+        const currentLat = Math.floor(25 + Math.random() * 30);
+
+        // Update KPIs
+        document.getElementById('pipe-ingested').innerText = totalIngested.toLocaleString();
+        document.getElementById('pipe-throughput').innerHTML = `${currentTps} <span style="font-size:0.5em;color:var(--text-muted)">msgs/s</span>`;
+        document.getElementById('pipe-latency').innerHTML = `${currentLat} <span style="font-size:0.5em;color:var(--text-muted)">ms</span>`;
+
+        // Update Flow Rates
+        document.getElementById('flow-rate-1').innerText = `${currentTps}/s`;
+        document.getElementById('flow-rate-2').innerText = `${currentTps - Math.floor(Math.random()*10)}/s`;
+        document.getElementById('flow-rate-3').innerText = `${Math.floor(currentTps / 20)}/s`;
         
-        // Generate high-frequency noise data (e.g. 30 days)
-        const days = Array.from({length: 30}, (_, i) => `Day ${i+1}`);
-        const rawData = Array.from({length: 30}, () => Math.random() * 100);
-        
-        // Apply Moving Average Smoothing (window = 5)
-        const windowSize = 5;
-        const smoothedData = rawData.map((val, idx, arr) => {
-            const start = Math.max(0, idx - windowSize + 1);
-            const subset = arr.slice(start, idx + 1);
-            return subset.reduce((sum, v) => sum + v, 0) / subset.length;
-        });
+        const sparkStatus = document.getElementById('flow-status-spark');
+        if (sparkStatus) {
+            sparkStatus.style.color = currentTps > 550 ? '#f59e0b' : '#10b981';
+            sparkStatus.innerText = currentTps > 550 ? '● High Load' : '● Processing';
+        }
 
-        if (sentimentTrendChartInstance) sentimentTrendChartInstance.destroy();
-        sentimentTrendChartInstance = new Chart(ctx.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: days,
-                datasets: [
-                    { label: 'Raw Noise', data: rawData, borderColor: 'rgba(56, 189, 248, 0.2)', borderWidth: 1, borderDash: [5,5], pointRadius: 0, tension: 0.3 },
-                    { label: 'Moving Average (5-Day)', data: smoothedData, borderColor: '#0ea5e9', borderWidth: 3, pointBackgroundColor: '#0f172a', pointBorderColor: '#0ea5e9', tension: 0.4 }
-                ]
-            },
-            options: { responsive: true, maintainAspectRatio: false, color: '#94a3b8', scales: { x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }, y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { labels: { color: '#cbd5e1' } } } }
-        });
+        // Update Charts
+        if (pipeThroughputChart) {
+            throughputData.shift();
+            throughputData.push(currentTps);
+            pipeThroughputChart.update('none');
+        }
+
+        if (pipeLatencyChart) {
+            const newLat = Array(10).fill(0).map(() => Math.random() * (currentTps > 550 ? 100 : 50));
+            pipeLatencyChart.data.datasets[0].data = newLat;
+            pipeLatencyChart.update('none');
+        }
+
+        // Update Logs
+        const logsContainer = document.getElementById('terminal-logs');
+        if (logsContainer) {
+            const msgTypes = [
+                `[INFO] Batch #${Math.floor(Math.random()*10000)} committed to ScyllaDB: ${currentTps} rows in ${currentLat}ms`,
+                `[SUCCESS] Health check passed: Cluster latency ${currentLat-10}ms`,
+                `[INFO] Partition compaction completed on Node-${Math.floor(Math.random()*3)+1}`,
+                currentTps > 550 ? `[WARN] High throughput detected: Auto-scaling Spark workers...` : `[INFO] Kafka offset committed successfully.`
+            ];
+            
+            const logLine = document.createElement('div');
+            const msg = msgTypes[Math.floor(Math.random() * msgTypes.length)];
+            logLine.innerText = `> ${new Date().toISOString().split('T')[1].slice(0,-1)} - ${msg}`;
+            if (msg.includes('[WARN]')) logLine.style.color = '#f59e0b';
+            
+            logsContainer.appendChild(logLine);
+            if (logsContainer.children.length > 50) logsContainer.removeChild(logsContainer.firstChild);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
     }
+
 
     // --- Kaggle Universal Analyzer (Tab 1) ---
     const kaggleBtn = document.getElementById('kaggle-btn');

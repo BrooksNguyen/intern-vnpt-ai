@@ -266,53 +266,108 @@
 
             <!-- TAB 2: PIPELINE MONITOR -->
             <div id="tab-pipeline" class="tab-content" style="display:none;">
-                <div class="metrics-row">
+                <!-- 1. KPI Row -->
+                <div class="metrics-row" style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
                     <div class="metric-card">
-                        <div class="metric-label">Total Analyzed Rooms</div>
-                        <div class="metric-value tooltip-container" id="rooms-val">--
-                            <span class="tooltip">Waiting for ScyllaDB cluster connection</span>
-                        </div>
+                        <div class="metric-label">Ingested Records</div>
+                        <div class="metric-value tooltip-container" id="pipe-ingested">1,284,920</div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-label">Total Processed Messages</div>
-                        <div class="metric-value tooltip-container" id="msgs-val">--
-                            <span class="tooltip">Waiting for ScyllaDB cluster connection</span>
-                        </div>
+                        <div class="metric-label">Throughput (TPS)</div>
+                        <div class="metric-value tooltip-container" id="pipe-throughput">450 <span style="font-size:0.5em;color:var(--text-muted)">msgs/s</span></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Processing Latency (p95)</div>
+                        <div class="metric-value tooltip-container" id="pipe-latency">42 <span style="font-size:0.5em;color:var(--text-muted)">ms</span></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Active Storage Nodes</div>
+                        <div class="metric-value tooltip-container" id="pipe-nodes" style="color:var(--color-success)">3/3 <span style="font-size:0.5em;color:var(--text-muted)">Healthy</span></div>
                     </div>
                 </div>
 
+                <!-- 2. Pipeline Flow Diagram -->
+                <div class="chart-card" style="margin-bottom: 2rem; padding: 2rem; text-align:center;">
+                    <h4 style="margin-bottom: 2rem; color: #fff;">Data Pipeline Architecture</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto; overflow-x: auto;">
+                        
+                        <!-- Source -->
+                        <div style="background: rgba(30,41,59,0.8); border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 8px; min-width: 130px;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem">📥</div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color:#f8fafc;">Kafka/Logs</div>
+                            <div style="font-size: 0.75rem; color: #10b981; margin-top:0.5rem">● Active</div>
+                        </div>
+                        
+                        <!-- Arrow -->
+                        <div style="color: rgba(255,255,255,0.3); font-size: 1.5rem; position:relative; min-width: 60px;">
+                            <div style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); font-size:0.75rem; color:var(--text-muted); white-space:nowrap" id="flow-rate-1">450/s</div>
+                            ⟶
+                        </div>
+
+                        <!-- ETL Engine -->
+                        <div style="background: rgba(30,41,59,0.8); border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 8px; min-width: 130px;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem">⚡</div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color:#f8fafc;">PySpark ETL</div>
+                            <div style="font-size: 0.75rem; color: #10b981; margin-top:0.5rem" id="flow-status-spark">● Processing</div>
+                        </div>
+                        
+                        <!-- Arrow -->
+                        <div style="color: rgba(255,255,255,0.3); font-size: 1.5rem; position:relative; min-width: 60px;">
+                            <div style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); font-size:0.75rem; color:var(--text-muted); white-space:nowrap" id="flow-rate-2">450/s</div>
+                            ⟶
+                        </div>
+
+                        <!-- Storage -->
+                        <div style="background: rgba(30,41,59,0.8); border: 1px solid #38bdf8; padding: 1.5rem; border-radius: 8px; min-width: 130px; box-shadow: 0 0 15px rgba(56,189,248,0.2);">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem">🗄️</div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color:#f8fafc;">ScyllaDB</div>
+                            <div style="font-size: 0.75rem; color: #10b981; margin-top:0.5rem">● 3 Nodes</div>
+                        </div>
+                        
+                        <!-- Arrow -->
+                        <div style="color: rgba(255,255,255,0.3); font-size: 1.5rem; position:relative; min-width: 60px;">
+                            <div style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); font-size:0.75rem; color:var(--text-muted); white-space:nowrap" id="flow-rate-3">12/s</div>
+                            ⟶
+                        </div>
+
+                        <!-- API -->
+                        <div style="background: rgba(30,41,59,0.8); border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 8px; min-width: 130px;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem">🌐</div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color:#f8fafc;">Serving API</div>
+                            <div style="font-size: 0.75rem; color: #10b981; margin-top:0.5rem">● Healthy</div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 3. System Metrics -->
                 <div class="charts-grid" style="margin-bottom: 2rem;">
                     <div class="chart-card">
-                        <h4>Sentiment Trend (Moving Average)</h4>
+                        <h4>Throughput over Time (msgs/sec)</h4>
                         <div class="chart-wrapper">
-                            <canvas id="sentimentTrendChart"></canvas>
+                            <canvas id="pipeThroughputChart"></canvas>
                         </div>
                     </div>
                     <div class="chart-card">
-                        <h4>Top Keywords WordCloud</h4>
-                        <div class="img-container">
-                            <img src="/assets/wordcloud_room_999.png" alt="WordCloud Chart" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmMThmOSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjNmM3NTdkIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbWFnZSBOb3QgRm91bmQ8L3RleHQ+PC9zdmc+'">
+                        <h4>Latency Distribution (ms)</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="pipeLatencyChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <div class="section-title">💬 Chat Room Explorer</div>
-                <div class="explorer-card">
-                    <div class="search-controls">
-                        <select id="room-select" class="form-select">
-                            <option value="" disabled selected>Loading available rooms...</option>
-                        </select>
-                        <button id="load-btn" class="btn-primary" disabled>Explore Messages</button>
-                    </div>
-
-                    <div class="chat-container" id="chat-container">
-                        <div class="empty-state">
-                            <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            <p>Select a room to view its message history</p>
+                <!-- 4. Live Audit Logs -->
+                <div class="chart-card" style="background: #0f172a; padding: 0; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
+                    <div style="padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.2);">
+                        <h4 style="margin:0; color:#cbd5e1; font-size: 0.9rem;">Live Ingestion Logs</h4>
+                        <div style="display:flex; gap:0.5rem">
+                            <span style="height:10px; width:10px; border-radius:50%; background:#ef4444"></span>
+                            <span style="height:10px; width:10px; border-radius:50%; background:#eab308"></span>
+                            <span style="height:10px; width:10px; border-radius:50%; background:#22c55e"></span>
                         </div>
                     </div>
-                    <div style="text-align: center; margin-top: 1rem;">
-                        <button id="load-more-btn" class="btn-primary" style="display: none; background: #334155;">Load More Messages</button>
+                    <div id="terminal-logs" style="padding: 1.5rem; height: 250px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; color: #10b981; line-height: 1.6; background: #000;">
+                        <div style="color: #38bdf8">> Tail starting for Data Pipeline...</div>
                     </div>
                 </div>
             </div>
