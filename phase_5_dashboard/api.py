@@ -154,5 +154,50 @@ def analyze_kaggle(
     except BaseException as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/analyze/ai-feedback")
+@app.post("/api/analyze/ai-feedback")
+def analyze_ai_feedback(payload: dict):
+    """
+    Takes the Kaggle analysis result and generates a brief AI insight using Gemini.
+    """
+    import urllib.request
+    import json
+    
+    data = payload.get("analysis_data", {})
+    if not data:
+        raise HTTPException(status_code=400, detail="No analysis data provided")
+        
+    prompt = "You are an expert Data Analyst. Analyze the following dataset statistics and provide a very brief, professional, and insightful summary (max 3 short paragraphs). Highlight any anomalies or interesting trends.\n\n"
+    prompt += f"Dataset: {data.get('dataset')}\n"
+    prompt += f"Dimensions: {data.get('total_rows')} rows x {data.get('total_cols')} cols\n"
+    prompt += f"Missing Data Rate: {data.get('missing_rate')}%\n"
+    
+    if data.get('is_numeric'):
+        prompt += f"Value Distribution (Histogram): {data.get('histogram')}\n"
+    else:
+        prompt += f"Sentiment Distribution: {data.get('sentiment_distribution')}\n"
+        prompt += f"Top Extracted Keywords: {data.get('top_keywords')}\n"
+
+    api_key = "AQ.Ab8RN6K5GTxLDLPk2hiVJ8FCP-LZBw0zNJ3HBpfpkaUPR3rwQwv"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    
+    req_body = {
+        "contents": [{"parts":[{"text": prompt}]}]
+    }
+    
+    req_http = urllib.request.Request(
+        url, 
+        data=json.dumps(req_body).encode('utf-8'), 
+        headers={'Content-Type': 'application/json'}
+    )
+    
+    try:
+        with urllib.request.urlopen(req_http) as response:
+            result = json.loads(response.read().decode())
+            feedback = result['candidates'][0]['content']['parts'][0]['text']
+            return {"feedback": feedback}
+    except Exception as e:
+        return {"feedback": f"AI Feedback unavailable (API Error): {str(e)}"}
+
 if __name__ == "__main__":
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)

@@ -433,6 +433,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            // --- Generate AI Feedback via Gemini ---
+            const aiContainer = document.getElementById('kaggle-ai-feedback');
+            const aiContent = document.getElementById('kaggle-ai-content');
+            aiContainer.style.display = 'block';
+            aiContent.innerHTML = '<div style="display:flex; align-items:center; gap: 0.5rem;"><div class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></div> Analyzing patterns...</div>';
+            setTimeout(() => { aiContainer.style.opacity = '1'; }, 50);
+
+            try {
+                const aiRes = await fetch(`${API_BASE}/analyze/ai-feedback`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ analysis_data: data })
+                });
+                const aiData = await aiRes.json();
+                if (aiRes.ok && aiData.feedback) {
+                    // Format markdown bold
+                    const formatted = aiData.feedback.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fff">$1</strong>');
+                    aiContent.innerHTML = formatted;
+                } else {
+                    aiContent.innerHTML = `<span style="color:#ef4444">Failed to generate insights: ${aiData.feedback || 'Unknown error'}</span>`;
+                }
+            } catch (err) {
+                aiContent.innerHTML = `<span style="color:#ef4444">Connection error while fetching AI Insights.</span>`;
+            }
+
         } catch (error) {
             document.getElementById('kaggle-loading').style.display = 'none';
             document.getElementById('kaggle-error').innerText = `Error: ${error.message}`;
