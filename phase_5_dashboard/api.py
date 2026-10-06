@@ -178,7 +178,8 @@ def analyze_ai_feedback(payload: dict):
         prompt += f"Sentiment Distribution: {data.get('sentiment_distribution')}\n"
         prompt += f"Top Extracted Keywords: {data.get('top_keywords')}\n"
 
-    api_key = "AQ.Ab8RN6K5GTxLDLPk2hiVJ8FCP-LZBw0zNJ3HBpfpkaUPR3rwQwv"
+    import os
+    api_key = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6K5GTxLDLPk2hiVJ8FCP-LZBw0zNJ3HBpfpkaUPR3rwQwv")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     
     req_body = {
