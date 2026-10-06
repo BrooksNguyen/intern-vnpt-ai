@@ -108,15 +108,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     datasets: [{
                         label: 'Messages/sec',
                         data: throughputData,
-                        borderColor: '#0ea5e9',
-                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        borderColor: 'rgba(0, 90, 169, 0.8)',
+                        backgroundColor: 'rgba(0, 90, 169, 0.15)',
                         borderWidth: 2,
                         fill: true,
                         tension: 0.4,
                         pointRadius: 0
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, color: '#94a3b8', scales: { x: { display: false }, y: { min: 200, max: 800, grid: { color: '#334155' } } }, plugins: { legend: { display: false } } }
+                options: { responsive: true, maintainAspectRatio: false, color: '#64748b', scales: { x: { display: false }, y: { min: 200, max: 800, grid: { color: '#e2e8f0' } } }, plugins: { legend: { display: false } } }
             });
         }
 
@@ -129,11 +129,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     datasets: [{
                         label: 'Requests',
                         data: latencyData.map(d => d.y),
-                        backgroundColor: '#8b5cf6',
+                        backgroundColor: '#94a3b8',
                         borderRadius: 4
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, color: '#94a3b8', scales: { x: { grid: { display: false }, ticks: { color: '#94a3b8' } }, y: { display: false } }, plugins: { legend: { display: false } } }
+                options: { responsive: true, maintainAspectRatio: false, color: '#64748b', scales: { x: { grid: { display: false }, ticks: { color: '#64748b' } }, y: { display: false } }, plugins: { legend: { display: false } } }
             });
         }
 
@@ -183,16 +183,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const logsContainer = document.getElementById('terminal-logs');
         if (logsContainer) {
             const msgTypes = [
-                `[INFO] Batch #${Math.floor(Math.random()*10000)} committed to ScyllaDB: ${currentTps} rows in ${currentLat}ms`,
-                `[SUCCESS] Health check passed: Cluster latency ${currentLat-10}ms`,
-                `[INFO] Partition compaction completed on Node-${Math.floor(Math.random()*3)+1}`,
-                currentTps > 550 ? `[WARN] High throughput detected: Auto-scaling Spark workers...` : `[INFO] Kafka offset committed successfully.`
+                `<span style="color:#64748b; font-weight:600">[INFO]</span> Batch #${Math.floor(Math.random()*10000)} committed to ScyllaDB: ${currentTps} rows in ${currentLat}ms`,
+                `<span style="color:#10b981; font-weight:600">[SUCCESS]</span> Health check passed: Cluster latency ${currentLat-10}ms`,
+                `<span style="color:#64748b; font-weight:600">[INFO]</span> Partition compaction completed on Node-${Math.floor(Math.random()*3)+1}`,
+                currentTps > 550 ? `<span style="color:#f59e0b; font-weight:600">[WARN]</span> High throughput detected: Auto-scaling Spark workers...` : `<span style="color:#64748b; font-weight:600">[INFO]</span> Kafka offset committed successfully.`
             ];
             
             const logLine = document.createElement('div');
             const msg = msgTypes[Math.floor(Math.random() * msgTypes.length)];
-            logLine.innerText = `> ${new Date().toISOString().split('T')[1].slice(0,-1)} - ${msg}`;
-            if (msg.includes('[WARN]')) logLine.style.color = '#f59e0b';
+            logLine.innerHTML = `<span style="color: var(--text-muted);">> ${new Date().toISOString().split('T')[1].slice(0,-1)}</span> - ${msg}`;
             
             logsContainer.appendChild(logLine);
             if (logsContainer.children.length > 50) logsContainer.removeChild(logsContainer.firstChild);
