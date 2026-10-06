@@ -468,9 +468,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset UI
         kaggleBtn.innerText = 'Analyzing...'; kaggleBtn.disabled = true;
         document.getElementById('kaggle-empty-state').style.display = 'none';
-        document.getElementById('kaggle-results-container').style.display = 'none';
         document.getElementById('kaggle-error').style.display = 'none';
-        document.getElementById('kaggle-loading').style.display = 'block';
+        
+        const resultsContainer = document.getElementById('kaggle-results-container');
+        const loadingIndicator = document.getElementById('kaggle-loading');
+        
+        if (resultsContainer.style.display !== 'none') {
+            resultsContainer.style.opacity = '0';
+            resultsContainer.style.transition = 'opacity 0.3s ease';
+            await new Promise(r => setTimeout(r, 300));
+        }
+        
+        resultsContainer.style.display = 'none';
+        loadingIndicator.style.display = 'block';
 
         let url = `${API_BASE}/analyze/kaggle?dataset=${encodeURIComponent(slug)}`;
         if (kaggleColumn.value.trim()) url += `&text_column=${encodeURIComponent(kaggleColumn.value.trim())}`;
@@ -500,11 +510,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('kaggle-error').style.display = 'block';
             }
 
-            // ---- Step 2: Render profile KPIs + column table ----
-            document.getElementById('kaggle-loading').style.display = 'none';
-            document.getElementById('kaggle-results-container').style.display = 'block';
+            // ---- Step 2: Render profile KPIs ----
+            loadingIndicator.style.display = 'none';
+            resultsContainer.style.opacity = '0';
+            resultsContainer.style.display = 'block';
+            
+            // Trigger reflow to ensure transition works
+            void resultsContainer.offsetWidth;
+            
+            resultsContainer.style.transition = 'opacity 0.5s ease';
+            resultsContainer.style.opacity = '1';
+            
             renderKPIs(profile);
-            renderColumnTable(profile);
+            // We purposely do NOT render the column table anymore based on user feedback
 
             // ---- Step 3: Request AI chart configs + narrative ----
             const aiContainer = document.getElementById('kaggle-ai-feedback');
