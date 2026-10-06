@@ -174,36 +174,134 @@
 
     <!-- VIEW 2: DASHBOARD (LAUNCH PAGE) -->
     <div id="dashboard-view" class="view" style="display: none;">
-        <div class="dashboard-container">
-            <div class="dashboard-header">
-                <div>
-                    <h2>Phase 5: Interactive Dashboard</h2>
-                    <p class="subtitle">Real-time ScyllaDB querying & NLP Visualizations</p>
+        
+        <!-- Dashboard Top Header -->
+        <div class="dash-top-bar">
+            <div class="dash-top-container">
+                <div class="dash-title-group">
+                    <h2 style="margin-bottom: 0;">Interactive Dashboard</h2>
+                    <div class="status-badge" id="api-status">
+                        <span class="indicator"></span>
+                        <span class="status-text">Backend: Connecting...</span>
+                    </div>
                 </div>
-                <div class="status-badge" id="api-status">
-                    <span class="indicator"></span>
-                    <span class="status-text">Connecting...</span>
+                
+                <!-- Tab Navigation -->
+                <div class="dash-tabs">
+                    <button class="tab-btn active" data-target="tab-kaggle">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Kaggle Profiler
+                    </button>
+                    <button class="tab-btn" data-target="tab-pipeline">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                        Pipeline Monitor
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-container">
+            
+            <!-- TAB 1: KAGGLE PROFILER -->
+            <div id="tab-kaggle" class="tab-content active">
+                
+                <!-- Centered Search Bar -->
+                <div class="search-hero">
+                    <h3>Import Public Dataset</h3>
+                    <p class="subtitle" style="margin-bottom:1.5rem">Analyze any Kaggle dataset on the fly to extract statistical and NLP insights.</p>
+                    
+                    <div class="search-bar-wrapper">
+                        <input type="text" id="kaggle-slug" class="form-select main-search" placeholder="Enter Dataset Slug (e.g., kazanova/sentiment140)">
+                        <input type="text" id="kaggle-column" class="form-select secondary-search" placeholder="Target Column (Opt)">
+                        <button id="kaggle-btn" class="btn-primary btn-large">Analyze</button>
+                    </div>
+                    
+                    <div class="quick-chips">
+                        <span>Try these:</span>
+                        <button class="chip" data-slug="crowdflower/twitter-airline-sentiment">Twitter Airline</button>
+                        <button class="chip" data-slug="kazanova/sentiment140">Sentiment140</button>
+                        <button class="chip" data-slug="behrad3d/nasa-cmaps">NASA C-MAPSS</button>
+                    </div>
+                </div>
+                
+                <!-- Loading State -->
+                <div id="kaggle-loading" style="display:none; text-align:center; padding: 4rem;">
+                    <div class="spinner"></div>
+                    <p style="margin-top:1rem; color:var(--text-muted)">Downloading & Processing Dataset...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="kaggle-error" class="error-banner" style="display:none;"></div>
+
+                <!-- Results Section -->
+                <div id="kaggle-results-container" style="display: none;">
+                    
+                    <!-- 4-Card Metric Strip -->
+                    <div class="kpi-strip">
+                        <div class="metric-card small">
+                            <div class="metric-label">File Name</div>
+                            <div class="metric-value-text" id="kpi-file">--</div>
+                        </div>
+                        <div class="metric-card small">
+                            <div class="metric-label">Dimensions</div>
+                            <div class="metric-value-text" id="kpi-dim">--</div>
+                        </div>
+                        <div class="metric-card small">
+                            <div class="metric-label">Target Column</div>
+                            <div class="metric-value-text" id="kpi-col">--</div>
+                        </div>
+                        <div class="metric-card small">
+                            <div class="metric-label">Data Health (Missing)</div>
+                            <div class="metric-value-text" id="kpi-health">--</div>
+                        </div>
+                    </div>
+
+                    <!-- Adaptive Charts Grid -->
+                    <div class="charts-grid" style="margin-top:2rem;">
+                        <div class="chart-card">
+                            <h4 id="kaggle-chart1-title">Distribution</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="kaggleChart1"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h4 id="kaggle-chart2-title">Insights</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="kaggleChart2"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Initial Empty State -->
+                <div id="kaggle-empty-state" class="empty-state" style="padding: 4rem;">
+                    <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M2 12h4l3-9 5 18 3-9h5"></path></svg>
+                    <p style="margin-top: 1rem">Enter a dataset slug or select a chip above to begin analysis.</p>
                 </div>
             </div>
 
-            <section class="dashboard-section">
-                <div class="section-title">🧠 NLP Analytics & Statistics</div>
+            <!-- TAB 2: PIPELINE MONITOR -->
+            <div id="tab-pipeline" class="tab-content" style="display:none;">
                 <div class="metrics-row">
                     <div class="metric-card">
                         <div class="metric-label">Total Analyzed Rooms</div>
-                        <div class="metric-value" id="rooms-val">--</div>
+                        <div class="metric-value tooltip-container" id="rooms-val">--
+                            <span class="tooltip">Waiting for ScyllaDB cluster connection</span>
+                        </div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-label">Total Processed Messages</div>
-                        <div class="metric-value" id="msgs-val">--</div>
+                        <div class="metric-value tooltip-container" id="msgs-val">--
+                            <span class="tooltip">Waiting for ScyllaDB cluster connection</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="charts-grid">
+                <div class="charts-grid" style="margin-bottom: 2rem;">
                     <div class="chart-card">
-                        <h4>Sentiment Trend</h4>
-                        <div class="img-container">
-                            <img src="/assets/sentiment_trend.png" alt="Sentiment Trend Chart" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmMThmOSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmaWxsPSIjNmM3NTdkIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbWFnZSBOb3QgRm91bmQ8L3RleHQ+PC9zdmc+'">
+                        <h4>Sentiment Trend (Moving Average)</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="sentimentTrendChart"></canvas>
                         </div>
                     </div>
                     <div class="chart-card">
@@ -213,9 +311,7 @@
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <section class="dashboard-section">
                 <div class="section-title">💬 Chat Room Explorer</div>
                 <div class="explorer-card">
                     <div class="search-controls">
@@ -235,29 +331,8 @@
                         <button id="load-more-btn" class="btn-primary" style="display: none; background: #334155;">Load More Messages</button>
                     </div>
                 </div>
-            </section>
-            
-            <section class="dashboard-section">
-                <div class="section-title">
-                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    Kaggle Dataset Analyzer
-                </div>
-                <div class="explorer-card">
-                    <p style="margin-bottom:1.5rem; color:var(--text-muted)">Import real data from Kaggle by providing a dataset slug (e.g., <code>kazanova/sentiment140</code>) to perform on-the-fly NLP analysis.</p>
-                    <div class="search-controls">
-                        <input type="text" id="kaggle-slug" class="form-select" placeholder="Dataset Slug (e.g., username/dataset-name)">
-                        <input type="text" id="kaggle-column" class="form-select" placeholder="Target Text Column (Optional)" style="flex: 0.5;">
-                        <button id="kaggle-btn" class="btn-primary">Analyze Dataset</button>
-                    </div>
-                    
-                    <div class="chat-container" id="kaggle-results-container" style="height: auto; min-height: 200px; padding: 2rem;">
-                        <div class="empty-state">
-                            <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M2 12h4l3-9 5 18 3-9h5"></path></svg>
-                            <p>Enter a dataset slug to begin analysis</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            </div>
+
         </div>
     </div>
 

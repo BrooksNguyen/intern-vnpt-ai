@@ -54,20 +54,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatContainer = document.getElementById('chat-container');
     
     let pollInterval = null;
-    let isPolling = false;
-    
-    // Add real-time toggle UI
-    const searchControls = document.querySelector('.search-controls');
-    if (searchControls) {
-        const toggleHtml = `
-            <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.9rem; color:#666; cursor:pointer; margin-left:1rem;">
-                <input type="checkbox" id="realtime-toggle" checked style="accent-color:#005baa; width:16px; height:16px;">
-                Live Sync
-            </label>
-        `;
-        searchControls.insertAdjacentHTML('beforeend', toggleHtml);
-    }
+    let sentimentTrendChartInstance = null;
 
+    // --- Tab Switching Logic ---
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.target).classList.add('active');
+        });
+    });
+
+    // --- Utility: Animated Counter ---
     function animateValue(obj, start, end, duration) {
         let startTimestamp = null;
         const step = (timestamp) => {
@@ -82,15 +83,16 @@ document.addEventListener('DOMContentLoaded', () => {
     async function initDashboard() {
         await fetchStats();
         await fetchRooms();
+        renderMockSentimentTrend();
         
-        // Setup Real-Time Polling
+        // Setup Real-Time Polling for Pipeline monitor
         if (!pollInterval) {
             pollInterval = setInterval(async () => {
                 const rtToggle = document.getElementById('realtime-toggle');
                 if (rtToggle && rtToggle.checked) {
-                    await fetchStats(false); // background fetch
+                    await fetchStats(false);
                     if (roomSelect.value) {
-                        await loadMessages(true); // background fetch
+                        await loadMessages(true);
                     }
                 }
             }, 3000);
@@ -104,12 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             roomSelect.innerHTML = '<option value="" disabled selected>Select a Room ID...</option>';
             if (data.rooms && data.rooms.length > 0) {
-                const sortedRooms = data.rooms.sort((a, b) => {
-                    const numA = parseInt(a.replace(/\D/g, '')) || 0;
-                    const numB = parseInt(b.replace(/\D/g, '')) || 0;
-                    return numA - numB;
-                });
-                
+                const sortedRooms = data.rooms.sort((a, b) => (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0));
                 sortedRooms.forEach(room => {
                     const option = document.createElement('option');
                     option.value = room;
@@ -133,11 +130,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (healthData.status === 'healthy') {
                 statusBadge.classList.add('healthy');
                 statusBadge.classList.remove('error');
-                statusText.innerText = 'API Connected (Live)';
+                statusText.innerText = 'Backend: Connected (Live)';
             } else throw new Error('Unhealthy');
 
             const statsRes = await fetch(`${API_BASE}/stats`);
             const statsData = await statsRes.json();
+            
+            // Remove Tooltips if connected
+            document.querySelectorAll('.tooltip').forEach(t => t.style.display = 'none');
             
             if (animate) {
                 animateValue(roomsVal, 0, statsData.total_rooms || 0, 1000);
@@ -146,20 +146,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 roomsVal.innerHTML = (statsData.total_rooms || 0).toLocaleString();
                 msgsVal.innerHTML = (statsData.total_messages || 0).toLocaleString();
             }
-
         } catch (error) {
             statusBadge.classList.add('error');
             statusBadge.classList.remove('healthy');
-            statusText.innerText = 'API Offline';
-            roomsVal.innerText = 'N/A'; msgsVal.innerText = 'N/A';
+            statusText.innerText = 'Mode: Standalone / Mock';
+            roomsVal.innerText = '--'; msgsVal.innerText = '--';
+            document.querySelectorAll('.tooltip').forEach(t => t.style.display = 'block');
         }
     }
 
     function formatDate(dateString) {
         if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleDateString('en-US', { 
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
-        });
+        return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
     const loadMoreBtn = document.getElementById('load-more-btn');
@@ -171,251 +169,202 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!isBackground) {
             if (isLoadMore) {
-                loadMoreBtn.innerText = 'Loading...';
-                loadMoreBtn.disabled = true;
+                loadMoreBtn.innerText = 'Loading...'; loadMoreBtn.disabled = true;
             } else {
-                loadBtn.innerText = 'Loading...';
-                loadBtn.disabled = true;
-                chatContainer.style.opacity = '0.5';
-                currentPagingState = null;
+                loadBtn.innerText = 'Loading...'; loadBtn.disabled = true;
+                chatContainer.style.opacity = '0.5'; currentPagingState = null;
             }
         }
 
         let url = `${API_BASE}/messages?room_id=${roomId}&limit=50`;
-        if (isLoadMore && currentPagingState) {
-            url += `&state=${encodeURIComponent(currentPagingState)}`;
-        }
+        if (isLoadMore && currentPagingState) url += `&state=${encodeURIComponent(currentPagingState)}`;
 
         try {
             const res = await fetch(url);
             const data = await res.json();
-            
-            // Check if user has scrolled up
             const isScrolled = chatContainer.scrollTop > 50;
 
-            if (!isLoadMore) {
-                chatContainer.innerHTML = ''; 
-            }
+            if (!isLoadMore) chatContainer.innerHTML = ''; 
             chatContainer.style.opacity = '1';
 
             if (data.data && data.data.length > 0) {
                 data.data.forEach((msg, index) => {
                     const msgDiv = document.createElement('div');
                     msgDiv.className = 'message';
-                    
                     if (!isBackground) {
                         msgDiv.style.opacity = '0';
-                        msgDiv.style.animation = `fade-in 0.3s ease forwards ${index * 0.02}s`;
+                        msgDiv.style.animation = `fadeIn 0.3s ease forwards ${index * 0.02}s`;
                     }
-                    
-                    msgDiv.innerHTML = `
-                        <div class="message-header">
-                            <span class="message-user">${msg.user_id}</span>
-                            <span>${formatDate(msg.timestamp)}</span>
-                        </div>
-                        <div class="message-content">${msg.content}</div>
-                    `;
+                    msgDiv.innerHTML = `<div class="message-header"><span class="message-user">${msg.user_id}</span><span>${formatDate(msg.timestamp)}</span></div><div class="message-content">${msg.content}</div>`;
                     chatContainer.appendChild(msgDiv);
                 });
                 
-                if (!isBackground && !isLoadMore && !isScrolled) {
-                    chatContainer.scrollTop = 0;
-                }
+                if (!isBackground && !isLoadMore && !isScrolled) chatContainer.scrollTop = 0;
                 
                 currentPagingState = data.paging_state;
-                if (currentPagingState && !isBackground) {
-                    loadMoreBtn.style.display = 'inline-block';
-                } else {
-                    loadMoreBtn.style.display = 'none';
-                }
-
+                if (currentPagingState && !isBackground) loadMoreBtn.style.display = 'inline-block';
+                else loadMoreBtn.style.display = 'none';
             } else {
-                if (!isLoadMore) {
-                    chatContainer.innerHTML = `<div class="empty-state"><p>No messages found in this room.</p></div>`;
-                }
+                if (!isLoadMore) chatContainer.innerHTML = `<div class="empty-state"><p>No messages found in this room.</p></div>`;
                 loadMoreBtn.style.display = 'none';
             }
-
         } catch (error) {
             if (!isBackground) {
                 chatContainer.style.opacity = '1';
-                if (!isLoadMore) {
-                    chatContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>API Connection Failed.</p></div>`;
-                }
+                if (!isLoadMore) chatContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>API Connection Failed.</p></div>`;
             }
         } finally {
             if (!isBackground) {
-                loadBtn.innerText = 'Explore Messages';
-                loadBtn.disabled = false;
-                loadMoreBtn.innerText = 'Load More Messages';
-                loadMoreBtn.disabled = false;
+                loadBtn.innerText = 'Explore Messages'; loadBtn.disabled = false;
+                if(loadMoreBtn) { loadMoreBtn.innerText = 'Load More Messages'; loadMoreBtn.disabled = false; }
             }
         }
     }
 
-    loadBtn.addEventListener('click', () => loadMessages(false, false));
-    if (loadMoreBtn) {
-        loadMoreBtn.addEventListener('click', () => loadMessages(false, true));
-    }
-    roomSelect.addEventListener('change', () => {
-        if (roomSelect.value) {
-            loadBtn.disabled = false;
-            loadMessages(false, false); // Auto-load on select change
-        }
+    if (loadBtn) loadBtn.addEventListener('click', () => loadMessages(false, false));
+    if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => loadMessages(false, true));
+    if (roomSelect) roomSelect.addEventListener('change', () => {
+        if (roomSelect.value) { loadBtn.disabled = false; loadMessages(false, false); }
     });
-    
-    // --- Kaggle Analyzer Logic ---
+
+    // --- Moving Average & Chart Logic for Pipeline Tab ---
+    function renderMockSentimentTrend() {
+        const ctx = document.getElementById('sentimentTrendChart');
+        if(!ctx) return;
+        
+        // Generate high-frequency noise data (e.g. 30 days)
+        const days = Array.from({length: 30}, (_, i) => `Day ${i+1}`);
+        const rawData = Array.from({length: 30}, () => Math.random() * 100);
+        
+        // Apply Moving Average Smoothing (window = 5)
+        const windowSize = 5;
+        const smoothedData = rawData.map((val, idx, arr) => {
+            const start = Math.max(0, idx - windowSize + 1);
+            const subset = arr.slice(start, idx + 1);
+            return subset.reduce((sum, v) => sum + v, 0) / subset.length;
+        });
+
+        if (sentimentTrendChartInstance) sentimentTrendChartInstance.destroy();
+        sentimentTrendChartInstance = new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: days,
+                datasets: [
+                    { label: 'Raw Noise', data: rawData, borderColor: 'rgba(56, 189, 248, 0.2)', borderWidth: 1, borderDash: [5,5], pointRadius: 0, tension: 0.3 },
+                    { label: 'Moving Average (5-Day)', data: smoothedData, borderColor: '#0ea5e9', borderWidth: 3, pointBackgroundColor: '#0f172a', pointBorderColor: '#0ea5e9', tension: 0.4 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, color: '#94a3b8', scales: { x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }, y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { labels: { color: '#cbd5e1' } } } }
+        });
+    }
+
+    // --- Kaggle Analyzer Logic (Tab 1) ---
     const kaggleBtn = document.getElementById('kaggle-btn');
     const kaggleSlug = document.getElementById('kaggle-slug');
     const kaggleColumn = document.getElementById('kaggle-column');
-    const kaggleContainer = document.getElementById('kaggle-results-container');
+    
+    // Chips integration
+    document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            kaggleSlug.value = chip.dataset.slug;
+            kaggleColumn.value = ''; // clear col
+            kaggleBtn.click();
+        });
+    });
+
+    let kaggleChart1Instance = null;
+    let kaggleChart2Instance = null;
 
     kaggleBtn.addEventListener('click', async () => {
         let slug = kaggleSlug.value.trim();
-        if (!slug) {
-            alert('Please enter a valid Kaggle Dataset Slug (e.g., kazanova/sentiment140)');
-            return;
-        }
+        if (!slug) return alert('Please enter a valid Kaggle Dataset Slug');
 
-        // Automatically extract slug if user pastes a full URL
         try {
             if (slug.includes('kaggle.com/datasets/')) {
                 const urlObj = new URL(slug);
                 const pathParts = urlObj.pathname.split('/').filter(Boolean);
-                if (pathParts.length >= 3 && pathParts[0] === 'datasets') {
-                    slug = `${pathParts[1]}/${pathParts[2]}`;
-                }
-            } else if (slug.startsWith('https://') || slug.startsWith('http://')) {
-                alert('Please provide a valid Kaggle dataset URL or just the slug.');
-                return;
+                if (pathParts.length >= 3) slug = `${pathParts[1]}/${pathParts[2]}`;
             }
-        } catch (e) {
-            // Ignore URL parse errors and fall back to whatever they entered
-        }
+        } catch (e) {}
 
-        kaggleBtn.innerText = 'Analyzing...';
-        kaggleBtn.disabled = true;
-        kaggleContainer.innerHTML = `<div class="empty-state"><p>Downloading and analyzing dataset via Kaggle API. This may take a minute depending on the dataset size...</p></div>`;
-        kaggleContainer.style.opacity = '0.7';
+        kaggleBtn.innerText = 'Analyzing...'; kaggleBtn.disabled = true;
+        document.getElementById('kaggle-empty-state').style.display = 'none';
+        document.getElementById('kaggle-results-container').style.display = 'none';
+        document.getElementById('kaggle-error').style.display = 'none';
+        document.getElementById('kaggle-loading').style.display = 'block';
 
         let url = `${API_BASE}/analyze/kaggle?dataset=${encodeURIComponent(slug)}`;
-        if (kaggleColumn.value.trim()) {
-            url += `&text_column=${encodeURIComponent(kaggleColumn.value.trim())}`;
-        }
+        if (kaggleColumn.value.trim()) url += `&text_column=${encodeURIComponent(kaggleColumn.value.trim())}`;
 
         try {
             const res = await fetch(url);
             const text = await res.text();
-            
             let data;
-            try {
-                data = JSON.parse(text);
-            } catch (err) {
-                throw new Error(res.ok ? "Invalid JSON from server" : `Server Error: ${res.status}. ${text.slice(0, 100)}`);
+            try { data = JSON.parse(text); } catch (err) { throw new Error(`Invalid JSON: ${text.slice(0, 100)}`); }
+            if (!res.ok) throw new Error(data.detail || 'Analysis failed');
+
+            if (data.error && data.error !== 'None') {
+                document.getElementById('kaggle-error').innerText = `Warning: ${data.error} (Using Mock Data)`;
+                document.getElementById('kaggle-error').style.display = 'block';
             }
 
-            if (!res.ok) {
-                throw new Error(data.detail || 'Analysis failed');
-            }
+            document.getElementById('kaggle-loading').style.display = 'none';
+            document.getElementById('kaggle-results-container').style.display = 'block';
 
-            kaggleContainer.style.opacity = '1';
-            
-            // Check if mock data
-            const isMock = data.csv_analyzed === "mock_data.csv";
-            const warningHtml = isMock ? `
-                <div style="background: rgba(255, 59, 48, 0.1); border: 1px solid #FF3B30; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: flex-start;">
-                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="#FF3B30" stroke-width="2" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                    <div>
-                        <strong style="color: #FF3B30; display: block; margin-bottom: 0.25rem;">Mock Data Triggered (API Auth Missing)</strong>
-                        <p style="color: #666; font-size: 0.9rem; margin: 0;">The server is currently missing its Kaggle API credentials. To unlock real data analysis, the site administrator must configure the <code style="background:#eee;padding:2px 4px;border-radius:4px;">KAGGLE_API_TOKEN</code> environment variable on the backend server.</p>
-                    </div>
-                </div>
-            ` : '';
+            // Populate KPIs
+            document.getElementById('kpi-file').innerText = data.csv_analyzed;
+            document.getElementById('kpi-dim').innerText = `${data.total_rows.toLocaleString()} x ${data.total_cols}`;
+            document.getElementById('kpi-col').innerText = data.column_analyzed;
+            document.getElementById('kpi-health').innerText = `${data.missing_rate}% Missing`;
 
-            // Build Results UI
-            kaggleContainer.innerHTML = `
-                <div style="animation: fade-in 0.4s ease forwards; width:100%">
-                    <h3 style="color:var(--vnpt-blue-dark); margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
-                        Dataset: ${data.dataset}
-                        <span style="font-size:0.8rem; background:rgba(0,180,216,0.1); color:var(--vnpt-blue-main); padding:4px 12px; border-radius:20px;">Analysis Complete</span>
-                    </h3>
-                    
-                    ${warningHtml}
-                    
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
-                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:0.5rem">CSV File Analyzed</div>
-                            <div style="font-size:1.1rem; font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${data.csv_analyzed}</div>
-                        </div>
-                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:0.5rem">Target Column</div>
-                            <div style="font-size:1.1rem; font-weight:600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${data.column_analyzed}</div>
-                        </div>
-                    </div>
-                    
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
-                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color); display:flex; flex-direction:column; align-items:center;">
-                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:1rem; align-self:flex-start;">Sentiment Distribution</div>
-                            <div style="position: relative; width: 100%; max-width: 250px; aspect-ratio: 1;">
-                                <canvas id="sentimentChart"></canvas>
-                            </div>
-                        </div>
-                        <div style="background:var(--bg-surface); padding:1.5rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
-                            <div style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; font-weight:600; margin-bottom:1rem;">Top Extracted Keywords</div>
-                            <div style="position: relative; width: 100%; height: 250px;">
-                                <canvas id="keywordsChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Render Charts after DOM updates
-            setTimeout(() => {
-                const ctxSentiment = document.getElementById('sentimentChart').getContext('2d');
-                new Chart(ctxSentiment, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Positive', 'Negative', 'Neutral'],
-                        datasets: [{
-                            data: [data.sentiment_distribution.positive, data.sentiment_distribution.negative, data.sentiment_distribution.neutral],
-                            backgroundColor: ['#34C759', '#FF3B30', '#8E8E93'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-                });
+            // Setup Charts based on data type
+            if (kaggleChart1Instance) kaggleChart1Instance.destroy();
+            if (kaggleChart2Instance) kaggleChart2Instance.destroy();
 
-                const ctxKeywords = document.getElementById('keywordsChart').getContext('2d');
-                const labels = data.top_keywords.map(k => k.word);
-                const counts = data.top_keywords.map(k => k.count);
-                new Chart(ctxKeywords, {
+            const ctx1 = document.getElementById('kaggleChart1').getContext('2d');
+            const ctx2 = document.getElementById('kaggleChart2').getContext('2d');
+
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.borderColor = '#334155';
+
+            if (data.is_numeric && data.histogram) {
+                document.getElementById('kaggle-chart1-title').innerText = "Value Distribution Histogram";
+                document.getElementById('kaggle-chart2-title').innerText = "Feature Trend Line (Sample)";
+                
+                kaggleChart1Instance = new Chart(ctx1, {
                     type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Word Frequency',
-                            data: counts,
-                            backgroundColor: 'rgba(0, 91, 170, 0.8)',
-                            borderRadius: 4
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                    data: { labels: data.histogram.map(h => h.bin), datasets: [{ label: 'Frequency', data: data.histogram.map(h => h.count), backgroundColor: '#38bdf8', borderRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
                 });
-            }, 50);
+
+                kaggleChart2Instance = new Chart(ctx2, {
+                    type: 'line',
+                    data: { labels: data.trend.map((_, i) => i+1), datasets: [{ label: 'Value', data: data.trend, borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.1)', fill: true, tension: 0.3, pointRadius: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+
+            } else if (data.sentiment_distribution && data.top_keywords) {
+                document.getElementById('kaggle-chart1-title').innerText = "Sentiment Class Distribution";
+                document.getElementById('kaggle-chart2-title').innerText = "Top Extracted Keywords";
+                
+                kaggleChart1Instance = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: { labels: ['Positive', 'Negative', 'Neutral'], datasets: [{ data: [data.sentiment_distribution.positive, data.sentiment_distribution.negative, data.sentiment_distribution.neutral], backgroundColor: ['#22c55e', '#ef4444', '#64748b'], borderWidth: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1'} } } }
+                });
+
+                kaggleChart2Instance = new Chart(ctx2, {
+                    type: 'bar',
+                    data: { labels: data.top_keywords.map(k => k.word), datasets: [{ label: 'Frequency', data: data.top_keywords.map(k => k.count), backgroundColor: '#0ea5e9', borderRadius: 4 }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            }
 
         } catch (error) {
-            kaggleContainer.style.opacity = '1';
-            kaggleContainer.innerHTML = `<div class="empty-state" style="color: #FF3B30;"><p>Error: ${error.message}</p></div>`;
+            document.getElementById('kaggle-loading').style.display = 'none';
+            document.getElementById('kaggle-error').innerText = `Error: ${error.message}`;
+            document.getElementById('kaggle-error').style.display = 'block';
         } finally {
-            kaggleBtn.innerText = 'Analyze Dataset';
-            kaggleBtn.disabled = false;
+            kaggleBtn.innerText = 'Analyze'; kaggleBtn.disabled = false;
         }
     });
-
-    
-    // Add simple fade-in keyframe dynamically for messages
-    const style = document.createElement('style');
-    style.innerHTML = `@keyframes fade-in { to { opacity: 1; transform: translateY(0); } }`;
-    document.head.appendChild(style);
-});

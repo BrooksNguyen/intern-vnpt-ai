@@ -58,77 +58,108 @@ def analyze_kaggle_dataset(dataset_slug: str, text_column: str = None) -> dict:
         # Use simple separator for txt files if needed, or let pandas infer
         df = pd.read_csv(target_csv, nrows=1000, sep=None, engine='python')
         
+        # Extract dimensions and health before sampling
+        total_rows, total_cols = df.shape
+        missing_rate = (df.isnull().sum().sum() / (total_rows * total_cols)) * 100 if total_rows > 0 else 0
+        
         if df.empty:
             raise ValueError("The CSV file is empty.")
 
-        # Determine text column
+        # Determine target column dynamically (prefer user choice, then text, then first col)
+        col = None
+        is_numeric = False
         if text_column and text_column in df.columns:
             col = text_column
         else:
             str_cols = df.select_dtypes(include=['object']).columns
-            if len(str_cols) == 0:
-                raise ValueError("No text columns found for analysis.")
-            col = str_cols[0]
+            num_cols = df.select_dtypes(include=['number']).columns
+            if len(str_cols) > 0:
+                col = str_cols[0]
+            elif len(num_cols) > 0:
+                col = num_cols[0]
+            else:
+                col = df.columns[0]
 
-        texts = df[col].dropna().astype(str).tolist()
+        is_numeric = pd.api.types.is_numeric_dtype(df[col])
         csv_name = os.path.basename(target_csv)
 
-    except BaseException as e:
-        # MOCK FALLBACK for Vercel/Timeout/Crash environments
-        # Guarantees the website is usable ASAP even if Kaggle download fails/crashes.
-        error_msg = str(e)
-        texts = [
-            "This is a great dataset, very useful!",
-            "The data is terrible and full of missing values.",
-            "Normal dataset, nothing special.",
-            "Awesome features for machine learning.",
-            "I hate how this data is formatted."
-        ] * 200 # 1000 rows
-        col = text_column if text_column else "mock_text_column"
-        csv_name = "mock_data.csv"
-    
-    # Perform Basic Analysis
-    total_analyzed = len(texts)
-    
-    # Mocking a basic sentiment classification based on keywords for speed
-    positive_words = ['good', 'great', 'awesome', 'excellent', 'happy', 'love', 'best', 'win']
-    negative_words = ['bad', 'terrible', 'awful', 'sad', 'hate', 'worst', 'lose', 'fail']
-    
-    pos_count = 0
-    neg_count = 0
-    neutral_count = 0
-    
-    word_freq = {}
-    
-    for text in texts:
-        lower_text = text.lower()
-        
-        # Sentiment
-        is_pos = any(w in lower_text for w in positive_words)
-        is_neg = any(w in lower_text for w in negative_words)
-        
-        if is_pos and not is_neg: pos_count += 1
-        elif is_neg and not is_pos: neg_count += 1
-        else: neutral_count += 1
+        analysis_data = {
+            "dataset": dataset_slug,
+            "csv_analyzed": csv_name,
+            "column_analyzed": col,
+            "total_rows": total_rows,
+            "total_cols": total_cols,
+            "missing_rate": round(missing_rate, 2),
+            "is_numeric": is_numeric
+        }
+
+        # Analyze based on data type
+        if is_numeric:
+            # Drop NaNs for numeric analysis
+            series = df[col].dropna()
+            if series.empty:
+                raise ValueError(f"Column {col} has no numeric data.")
             
-        # Word freq
-        words = lower_text.split()
-        for w in words:
-            w = "".join(c for c in w if c.isalpha())
-            if len(w) > 4: # basic stopword filter
-                word_freq[w] = word_freq.get(w, 0) + 1
+            # Simple histogram bins
+            counts, bins = pd.cut(series, bins=10, retbins=True, include_lowest=True)
+            hist_data = [{"bin": f"{round(bins[i], 1)} - {round(bins[i+1], 1)}", "count": int(count)} for i, count in enumerate(counts.value_counts(sort=False))]
+            analysis_data["histogram"] = hist_data
+            
+            # Simple trend line (first 100 points)
+            analysis_data["trend"] = series.head(100).tolist()
+        else:
+            texts = df[col].dropna().astype(str).tolist()
+            total_analyzed = len(texts)
+            analysis_data["total_rows_sampled"] = total_analyzed
+            
+            # Mocking a basic sentiment classification
+            positive_words = {'good', 'great', 'awesome', 'excellent', 'happy', 'love', 'best', 'win'}
+            negative_words = {'bad', 'terrible', 'awful', 'sad', 'hate', 'worst', 'lose', 'fail'}
+            stop_words = {'the', 'is', 'at', 'which', 'on', 'in', 'a', 'an', 'and', 'of', 'to', 'for', 'with', 'negative', 'neutral', 'positive'}
+            
+            pos_count, neg_count, neutral_count = 0, 0, 0
+            word_freq = {}
+            
+            for text in texts:
+                lower_text = text.lower()
+                
+                # Sentiment
+                is_pos = any(w in lower_text for w in positive_words)
+                is_neg = any(w in lower_text for w in negative_words)
+                
+                if is_pos and not is_neg: pos_count += 1
+                elif is_neg and not is_pos: neg_count += 1
+                else: neutral_count += 1
+                    
+                # Word freq
+                words = lower_text.split()
+                for w in words:
+                    w = "".join(c for c in w if c.isalpha())
+                    if len(w) > 3 and w not in stop_words: # better stopword filter
+                        word_freq[w] = word_freq.get(w, 0) + 1
 
-    top_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:10]
+            top_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:10]
+            analysis_data["sentiment_distribution"] = {
+                "positive": pos_count,
+                "negative": neg_count,
+                "neutral": neutral_count
+            }
+            analysis_data["top_keywords"] = [{"word": k, "count": v} for k, v in top_words]
 
-    return {
-        "dataset": dataset_slug,
-        "csv_analyzed": csv_name,
-        "column_analyzed": col,
-        "total_rows_sampled": total_analyzed,
-        "sentiment_distribution": {
-            "positive": pos_count,
-            "negative": neg_count,
-            "neutral": neutral_count
-        },
-        "top_keywords": [{"word": k, "count": v} for k, v in top_words]
-    }
+    except BaseException as e:
+        error_msg = str(e)
+        analysis_data = {
+            "dataset": dataset_slug,
+            "csv_analyzed": "mock_data.csv",
+            "column_analyzed": text_column if text_column else "mock_col",
+            "total_rows": 1000,
+            "total_cols": 5,
+            "missing_rate": 2.5,
+            "is_numeric": False,
+            "total_rows_sampled": 1000,
+            "sentiment_distribution": {"positive": 300, "negative": 150, "neutral": 550},
+            "top_keywords": [{"word": f"mock{i}", "count": 100-i*5} for i in range(10)],
+            "error": error_msg
+        }
+    
+    return analysis_data
